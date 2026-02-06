@@ -1,0 +1,1 @@
+{"name":"Mathlib.MeasureTheory.Integral.Lebesgue.MeasurePreserving","instances":[],"imports":["Init","Mathlib.Dynamics.Ergodic.MeasurePreserving","Mathlib.MeasureTheory.Integral.Lebesgue.Basic"],"declarations":[]}

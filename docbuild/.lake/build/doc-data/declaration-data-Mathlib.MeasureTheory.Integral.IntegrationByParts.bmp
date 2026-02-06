@@ -1,0 +1,1 @@
+{"name":"Mathlib.MeasureTheory.Integral.IntegrationByParts","instances":[],"imports":["Init","Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts"],"declarations":[]}

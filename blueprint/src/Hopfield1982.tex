@@ -1,0 +1,587 @@
+\chapter{Hopfield's 1982 paper}
+
+This module formalizes the key mathematical concepts from J.J. Hopfield's 1982 paper \cite{hopfield1982neural}
+"Neural networks and physical systems with emergent collective computational abilities",
+focusing on aspects that are not already covered in the main HopfieldNet formalization.
+
+The paper introduces a model of neural networks with binary neurons and studies their collective
+computational properties, particularly as content-addressable memories. The key insights include:
+
+\begin{itemize}
+\item The phase space flow and stable states of the network
+\item The storage capacity and pattern retrieval capabilities
+\item The relationship between energy minimization and memory retrieval
+\item Tolerance to noise and component failures
+\end{itemize}
+
+\begin{definition}\label{PhaseSpacePoint}
+\lean{Hopfield82.PhaseSpacePoint}
+\uses{HopfieldNetwork}
+\leanok
+A `PhaseSpacePoint` represents a state in the phase space of the Hopfield system.
+In the paper, this corresponds to the instantaneous state of all neurons (p.2554):
+"A point in state space then represents the instantaneous condition of the system."
+\end{definition}
+
+
+\begin{definition}\label{localField}
+\lean{Hopfield82.localField}
+\uses{HopfieldNetwork, PhaseSpacePoint}
+\leanok
+The `localField` for neuron i in state s is the weighted sum of inputs from other neurons,
+minus the threshold. This corresponds to $\sum j Tij Vj - \theta_i$ in the paper.
+\end{definition}
+
+
+\begin{definition}\label{updateRule}
+\lean{Hopfield82.updateRule}
+\uses{HopfieldNetwork, PhaseSpacePoint}
+\leanok
+The `updateRule` defines the neural state update according to the paper's Equation 1:
+    $Vi \rightarrow 1 if \sum j Tij Vj > Ui$
+   $ Vi \rightarrow 0 if \sum j Tij Vj < Ui$
+In our formalization, we use -1 instead of 0 for the "not firing" state.
+\end{definition}
+
+\begin{definition}\label{PhaseSpaceFlow}
+\lean{Hopfield82.PhaseSpaceFlow}
+\uses{PhaseSpacePoint}
+\leanok
+A `PhaseSpaceFlow` describes how the system state evolves over time.
+It maps each point in phase space to its successor state after updating one neuron.
+From the paper (p.2554): "The equations of motion of the system describe a flow in state space."
+\end{definition}
+
+
+\begin{definition}\label{FixedPoint}
+\lean{Hopfield82.FixedPoint}
+\uses{PhaseSpacePoint}
+\leanok
+A `FixedPoint` of the phase space flow is a state that does not change under evolution.
+In the paper, these correspond to the locally stable states of the network (p.2554):
+"Various classes of flow patterns are possible, but the systems of use for memory
+particularly include those that flow toward locally stable points..."
+\end{definition}
+
+
+\begin{definition}\label{BasinOfAttraction}
+\lean{Hopfield82.BasinOfAttraction}
+\uses{FixedPoint}
+\leanok
+A `BasinOfAttraction` of a fixed point is the set of all states that converge to it.
+In the paper (p.2554): "Then, if the system is started sufficiently near any Xa,
+as at $X = Xa + \Delta,$ it will proceed in time until $X \equiv Xa.$"
+\end{definition}
+
+
+\begin{definition}\label{EnergyLandscape}
+\lean{Hopfield82.EnergyLandscape}
+\uses{HopfieldNetwork}
+\leanok
+The `EnergyLandscape` of a Hopfield network is the energy function defined over all possible states.
+In the paper, this is the function E defined in Equation 7:
+   $ E = -1/2 \sum \sum Tij Vi Vj$
+\end{definition}
+
+
+\begin{definition}\label{energy_decrease}
+\lean{Hopfield82.energy_decrease}
+\uses{PhaseSpacePoint}
+\leanok
+The `energy\_decrease` when updating neuron i is always non-positive,
+as proven in the paper with Equation 8.
+
+This theorem formalizes a key result from the paper: the energy function
+always decreases (or remains constant) under asynchronous updates.
+\end{definition}
+
+
+\begin{definition}\label{convergence_to_fixed_point}
+\lean{Hopfield82.convergence_to_fixed_point}
+\uses{HopfieldNet_convergence_fair}
+\leanok
+This theorem captures the convergence result from the paper:
+"Every initial state flows to a limit point (if synchrony is not assumed)."
+\end{definition}
+
+\section{Memory Storage Algorithm}
+
+\begin{definition}\label{normalizedPattern}
+\lean{Hopfield82.normalizedPattern}
+\uses{HopfieldNetwork}
+\leanok
+The `normalizedPattern` converts a neural state to a vector with -1/+1 values,
+matching the $(2V_i - 1)$ term from equation 2 in Hopfield's paper.
+\end{definition}
+
+\begin{definition}\label{hebbian}
+\lean{Hopfield82.hebbian}
+\uses{HopfieldNetwork}
+\leanok
+The `hebbian` function computes the weight matrix according to Equation 2 of Hopfield's paper:
+    $T_{ij} = \sum_{s} (2V_{i}^s - 1)(2V_{i}^s - 1) with T_{ii} = 0$
+Note that this is equivalent to the existing `Hebbian` definition in HopfieldNet.HN,
+but we make the connection to the paper explicit here.
+\end{definition}
+
+\begin{definition}\label{isPseudoOrthogonal}
+\lean{Hopfield82.isPseudoOrthogonal}
+\uses{HopfieldNetwork}
+\leanok
+The `pseudoOrthogonality` property from Hopfield's paper (Equations 3-4) states:
+For random patterns, the dot product between different patterns is approximately 0,
+while the dot product of a pattern with itself is approximately N.
+This property is essential for understanding the storage capacity of Hopfield networks.
+\end{definition}
+
+
+\section{Connection to Physical Systems}
+
+\begin{definition}\label{spin_glass_analogy}
+\lean{Hopfield82.spin_glass_analogy}
+\uses{HopfieldNetwork}
+The `spin\_glass\_analogy` formalizes the connection between Hopfield networks and
+physical spin glass systems, as discussed in the paper.
+From the paper (p.2555): "This case is isomorphic with an Ising model."
+\end{definition}
+
+\begin{definition}\label{energy_convergence}
+\lean{Hopfield82.energy_convergence}
+\uses{HopfieldNet_convergence_fair, FixedPoint, PhaseSpacePoint}
+The `energy\_convergence` theorem formalizes the connection between energy minimization
+and the convergence to fixed points.
+This theorem establishes the connection between energy minimization and convergence
+to fixed points in Hopfield networks, as described in the paper
+From the paper (p.2555): "State changes will continue until a least (local) E is reached."
+\end{definition}
+
+
+
+% \begin{definition}\label{non_deleted_neuron_maintains_sign_of_activation}
+% \uses{deleted_field_product_bound}
+% TO DO
+% \end{definition}
+
+
+
+
+% \begin{definition}\label{non_deleted_neuron_maintains_sign_of_activation}
+% \uses{deleted_field_product_bound}
+% TO DO
+% \end{definition}
+
+
+
+
+% \begin{definition}\label{non_deleted_neuron_maintains_sign_of_activation}
+% \uses{deleted_field_product_bound}
+% TO DO
+% \end{definition}
+
+
+
+
+% \begin{definition}\label{non_deleted_neuron_maintains_sign_of_activation}
+% \uses{deleted_field_product_bound}
+% TO DO
+% \end{definition}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Content Addressable Memory}
+
+\begin{definition}\label{retrievalDistance}
+%\lean{Hopfield82.retrievalDistance}
+\uses{PhaseSpacePoint}
+\leanok
+The `retrievalDistance` function measures how far from a pattern we can initialize
+the network and still have it converge to that pattern. 
+From the paper (p.2556): "For distance ≤ 5, the nearest state was reached more than
+90\% of the time. Beyond that distance, the probability fell off smoothly.
+\end{definition}
+
+\begin{definition}\label{ContentAddressableMemory}
+%\lean{Hopfield82.ContentAddressableMemory}
+\uses{HopfieldNet_stabilize}
+\leanok
+A Content Addressable Memory is a system that can retrieve a complete pattern
+from a partial or corrupted version.
+
+This formalizes the central concept from the paper (p.2554):
+"A general content-addressable memory would be capable of retrieving this entire
+memory item on the basis of sufficient partial information.
+\end{definition}
+
+\begin{definition}\label{MetricDecayFunction}
+%\lean{Hopfield82.MetricDecayFunction}
+\leanok
+A generic function type representing how a metric (like completion probability or familiarity)
+decays or changes based on a distance-like value and network size.
+\end{definition}
+
+\begin{definition}\label{ExponentialDecayMetric}
+%\lean{Hopfield82.ExponentialDecayMetric}
+\uses{MetricDecayFunction}
+\leanok
+A specific exponential decay model, often used to model probabilities or familiarity scores.
+This corresponds to `exp(-value / (N/C))` where C is a constant (e.g., 10).
+\end{definition}
+
+\begin{definition}\label{AbstractCompletionProbability}
+%\lean{Hopfield82.AbstractCompletionProbability}
+\uses{MetricDecayFunction}
+\leanok
+The `AbstractCompletionProbability` measures the likelihood of correctly completing a pattern
+as a function of the Hamming distance `d` from the stored pattern.
+This formalizes the empirical finding from the paper (p.2556):
+"For distance $\leq 5,$ the nearest state was reached more than 90\% of the time.
+Beyond that distance, the probability fell off smoothly."
+\end{definition}
+
+\begin{definition}\label{ErrorCorrection}
+%\lean{Hopfield82.ErrorCorrection}
+\uses{ContentAddressableMemory, HopfieldNet_stabilize}
+`ErrorCorrection` quantifies the network's ability to correct errors in the input pattern.
+It's measured as the reduction in Hamming distance to the closest stored pattern after convergence.
+\leanok
+\end{definition}
+
+\begin{definition}\label{error_correction_guarantee}
+%\lean{Hopfield82.error_correction_guarantee}
+\uses{ContentAddressableMemory, HopfieldNet_stabilize}
+\leanok
+The `error\_correction\_guarantee` theorem establishes that Hopfield networks
+can correct a substantial fraction of errors in the input pattern.
+
+This formalizes a key capability of content-addressable memories.
+\end{definition}
+
+\begin{definition}\label{BasinOfAttraction'}
+%\lean{Hopfield82.BasinOfAttraction'}
+\uses{ContentAddressableMemory,HopfieldNet_stabilize}
+\leanok
+The `BasinOfAttraction'` of a pattern is the set of all states that converge to it.
+This concept is central to understanding the storage and retrieval properties of Hopfield networks.
+
+From the paper (p.2554): "Then, if the system is started sufficiently near any Xa,
+as at $X = Xa + \Delta,$ it will proceed in time until $X \equiv Xa.$
+\end{definition}
+
+\begin{definition}\label{BasinVolume}
+%\lean{Hopfield82.BasinVolume}
+\uses{ContentAddressableMemory,HopfieldNet_stabilize}
+\leanok
+The `BasinVolume` is the "size" of the basin of attraction, measured as the
+fraction of the state space that converges to a given pattern.
+
+This quantifies the robustness of memory retrieval.
+\end{definition}
+
+\begin{theorem}\label{basin_volume_bound}
+%\lean{Hopfield82.basin_volume_bound}
+\uses{ContentAddressableMemory}
+\leanok
+The `basin\_volume\_bound` theorem establishes that the basin volume decreases
+exponentially with the number of stored patterns.
+This formalizes how memory capacity affects retrieval robustness.
+\end{theorem}
+
+\begin{definition}\label{AbstractFamiliarityMeasure}
+%\lean{Hopfield82.AbstractFamiliarityMeasure}
+\uses{HopfieldNetwork}
+\leanok
+`AbstractFamiliarityMeasure` quantifies how familiar a given state `s` is to the network,
+based on its proximity (closest Hamming distance) to stored patterns, using a provided `decay\_func`.
+
+The paper discusses (p.2557): "The state 00000... is always stable. For a threshold of 0, this
+stable state is much higher in energy than the stored memory states and very seldom occurs."
+A high familiarity measure (close to 1) indicates `s` is similar to a stored pattern.
+The `ExponentialDecayMetric` can be used as `decay\_func`.
+\end{definition}
+
+
+\section{Memory Capacity}
+
+\begin{definition}\label{StorageCapacity}
+\lean{Hopfield82.StorageCapacity}
+\leanok
+The `StorageCapacity` of a Hopfield network is the maximum number of patterns
+that can be stored and reliably retrieved. The paper suggests this is around 0.15N.
+From the paper (p.2556): "About 0.15 N states can be simultaneously remembered before
+error in recall is severe."
+\end{definition}
+
+\begin{definition}\label{Hopfield82.Real.erf}
+\lean{Hopfield82.Real.erf}
+\leanok
+The error function is defined as:
+  %erf(x) = (2/π) ∫₀ˣ e^(-t²) dt
+  \[
+\operatorname{erf}(x) = \frac{2}{\sqrt{\pi}} \int_0^x e^{-t^2} \, dt
+\]
+This function is central in probability theory, especially for normal distributions.
+\end{definition}
+
+\begin{definition}\label{PatternRetrievalError}
+\lean{Hopfield82.PatternRetrievalError}
+\uses{Hopfield82.Real.erf}
+\leanok
+The `PatternRetrievalError` function computes the probability of an error in pattern retrieval
+for a network storing m patterns. This increases as m approaches and exceeds 0.15N.
+This corresponds to the error probability P discussed in Equation 10 of the paper:
+\( P = \int_{\sigma}^{\infty} \frac{1}{\sqrt{2\pi}} e^{-x^2 / 2} \, 
+dx = \frac{1}{2} \left(1 - \operatorname{erf}\left(\frac{\sigma}{\sqrt{2}}\right)\right) \),
+ where \( \sigma = \frac{N}{2\sqrt{nN}} \) and \( n \) is the number of patterns.
+
+\end{definition}
+
+\begin{theorem}\label{storage_capacity_bound}
+\lean{Hopfield82.storage_capacity_bound}
+\uses{HopfieldNetwork, Hebbian_stable}
+\leanok
+The result from the paper that a Hopfield network can store approximately 0.15N patterns
+with high reliability, where $N$ is the number of neurons. This theorem formalizes the
+ key result about storage capacity from the paper,
+utilizing the Hebbian\_stable theorem from the existing codebase.
+\end{theorem}
+
+
+\section{Fault Tolerance}
+
+\begin{definition}\label{DeleteNeuron}
+%\lean{Hopfield82.DeleteNeuron}
+\uses{HopfieldNetwork}
+\leanok
+The `DeleteNeuron` function simulates the failure of a neuron by removing its connections.
+This corresponds to setting weights to/from that neuron to zero.
+The paper discusses (p.2558): "The collective properties are only weakly sensitive to
+details of the modeling or the failure of individual devices."
+\end{definition}
+
+\begin{definition}\label{FaultTolerance}
+%\lean{Hopfield82.FaultTolerance}
+\uses{DeleteNeuron}
+\leanok
+The `FaultTolerance` of a Hopfield network is its ability to maintain function 
+despite the failure of some components. The paper notes that these networks are 
+inherently robust to component failures.
+\end{definition}
+
+
+\begin{definition}\label{pattern_stability_in_hebbian}
+%\lean{Hopfield82.pattern_stability_in_hebbian}
+\uses{Hebbian_stable}
+\leanok
+When m is at most a tenth of total neurons, each pattern is fixed point in the undamaged network
+\end{definition}
+
+
+\begin{lemma}\label{delete_single_neuron_step}
+%\lean{Hopfield82.delete_single_neuron_step}
+\uses{DeleteNeuron,hebbian}
+\leanok
+When deleting a single neuron from a network, the resulting weighted sum for a neuron u
+that's not the deleted neuron equals the original weighted sum minus the contribution
+from the deleted neuron.
+\end{lemma}
+
+\begin{definition}\label{delete_empty_neurons_step}
+%\lean{Hopfield82.delete_empty_neurons_step}
+\uses{DeleteNeuron,hebbian}
+\leanok
+When deleting neurons from an empty list, the result is the original network
+\end{definition}
+
+\begin{definition}\label{delete_cons_neuron_step}
+%\lean{Hopfield82.delete_cons_neuron_step}
+\uses{DeleteNeuron}
+\leanok
+When deleting a list of neurons with a new neuron added at the front, the effect 
+on the weighted sum equals the effect of deleting the first neuron and then 
+deleting the rest of the list.
+\end{definition}
+
+\begin{definition}\label{delete_singleton_neuron_step}
+%\lean{Hopfield82.delete_singleton_neuron_step}
+For a singleton list, the effect matches the single neuron deletion case.
+\leanok
+\end{definition}
+
+\begin{definition}\label{delete_neuron_from_deleted_network}
+%\lean{Hopfield82.delete_neuron_from_deleted_network}
+\uses{Hopfield82.Real.erf}
+\leanok
+The effect of deleting a neuron from an already deleted network on a neuron u that
+is not in the deleted set.
+\end{definition}
+
+\begin{definition}\label{commute_delete_foldl}
+%\lean{Hopfield82.commute_delete_foldl}
+\uses{DeleteNeuron}
+\leanok
+Helper lemma: DeleteNeuron commutes with foldl of DeleteNeuron if the neuron is not in the list.
+\end{definition}
+
+
+\begin{definition}\label{foldl_delete_preserves_weights}
+%\lean{Hopfield82.foldl_delete_preserves_weights}
+\leanok
+Helper lemma: Weights are preserved by foldl if indices are not in the list
+\end{definition}
+
+\begin{definition}\label{delete_neurons_recursive}
+%\lean{Hopfield82.delete_neurons_recursive}
+\uses{foldl_delete_preserves_weights}
+\leanok
+Helper lemma: Deleting a list of neurons recursively subtracts their contributions.
+    Requires that the list of neurons has no duplicates.
+\end{definition}
+
+\begin{definition}\label{deleted_neurons_field_effect}
+%\lean{Hopfield82.deleted_neurons_field_effect}
+\uses{delete_neurons_recursive}
+\leanok
+DeleteNeurons removes weights connected to deleted neurons.
+\end{definition}
+
+\section{Lemmas for Bounding Field Reduction due to Neuron Deletion}
+
+\begin{definition}\label{hebbian_weight_deleted_neurons_l_eq_k_term}
+%\lean{Hopfield82.hebbian_weight_deleted_neurons_l_eq_k_term}
+\uses{Hopfield82.Real.erf}
+\leanok
+Calculates the contribution to the deleted field sum from the target pattern `k` itself
+in the Hebbian weight definition.
+\end{definition}
+
+\begin{definition}\label{hebbian_weight_deleted_neurons_cross_talk_term}
+%\lean{Hopfield82.hebbian_weight_deleted_neurons_cross_talk_term}
+\uses{Hopfield82.Real.erf}
+\leanok
+Defines the cross-talk contribution to the deleted field sum.
+This term arises from the interaction of the target pattern `k` with other stored patterns $`l \neq k`$
+over the set of deleted neurons.
+\end{definition}
+
+\begin{lemma}\label{cross_talk_term_abs_bound_assumption}
+%\lean{Hopfield82.cross_talk_term_abs_bound_assumption}
+\uses{hebbian_weight_deleted_neurons_cross_talk_term}
+Axiom stating the bound on the absolute value of the cross-talk term.
+This encapsulates the statistical argument from Hopfield's paper that for
+random-like patterns, the sum of interfering terms is bounded.
+\end{lemma}
+
+\begin{lemma}\label{Hebbian_stable}
+%\lean{Hopfield82.Hebbian_stable}
+\uses{hebbian}
+\leanok
+Decomposes the total sum representing the field reduction into the contribution
+from the target pattern `k` and the cross-talk term from other patterns $l \neq k.$
+
+**Hopfield Assumption:** Assumes the standard Hebbian learning rule where $T_{ii} = 0$.
+The `Hebbian` definition in `HN.lean` implements this by subtracting `m • 1`.
+\end{lemma}
+
+\begin{lemma}\label{bound_cross_talk_term}
+%\lean{Hopfield82.bound_cross_talk_term}
+\uses{hebbian_weight_deleted_neurons_cross_talk_term}
+Placeholder lemma for bounding the cross-talk term.
+Proving a tight bound likely requires assumptions beyond simple orthogonality,
+such as patterns being random and uncorrelated, analyzed in the limit of large N.
+The bound likely depends on `m` (number of patterns) and `N` (number of neurons).
+**Hopfield Assumption:** Implicitly assumes patterns behave statistically like random vectors.
+\end{lemma}
+
+\begin{lemma}\label{deleted_field_bound}
+%\lean{Hopfield82.deleted_field_bound}
+\uses{bound_cross_talk_term}
+The field reduction from deleting neurons has a bounded effect.
+This version uses the decomposition and the (unproven) cross-talk bound.
+\end{lemma}
+
+\begin{lemma}\label{field_remains_sufficient}
+%\lean{Hopfield82.field_remains_sufficient}
+\leanok
+With constrained m and limited deleted neurons, the field remains strong enough
+\end{lemma}
+
+\begin{lemma}\label{bound_cross_talk_term_abs}
+%\lean{Hopfield82.bound_cross_talk_term_abs}
+\uses{cross_talk_term_abs_bound_assumption}
+\leanok
+For random orthogonal patterns, the cross-talk term has a bounded absolute value.
+This is a fundamental assumption from Hopfield's paper about how patterns interact.
+\end{lemma}
+
+\begin{lemma}\label{deleted_field_product_bound}
+%\lean{Hopfield82.deleted_field_product_bound}
+\uses{hebbian_weight_deleted_neurons_cross_talk_term}
+TO DO
+\end{lemma}
+
+\begin{lemma}\label{field_remains_sufficient_for_N_div_5}
+%\lean{Hopfield82.field_remains_sufficient_for_N_div_5}
+\uses{Hopfield82.Real.erf}
+With bounded numbers of patterns and deleted neurons, the field remains strong enough
+    to maintain the pattern stability, adjusted for N/5 bound.
+\end{lemma}
+
+\begin{lemma}\label{hebbian_deleted_threshold_is_zero}
+%\lean{Hopfield82.hebbian_deleted_threshold_is_zero}
+\uses{DeleteNeuron}
+\notready
+TO DO
+\end{lemma}
+
+\begin{lemma}\label{net_input_at_non_deleted_neuron}
+%\lean{Hopfield82.net_input_at_non_deleted_neuron}
+\uses{deleted_neurons_field_effect}
+\notready
+TO DO
+\end{lemma}
+
+\begin{lemma}\label{product_net_input_activation_at_non_deleted_neuron}
+%\lean{Hopfield82.product_net_input_activation_at_non_deleted_neuron}
+\uses{net_input_at_non_deleted_neuron}
+\notready
+TO DO
+\end{lemma}
+
+\begin{definition}\label{non_deleted_neuron_maintains_sign_of_activation}
+%\lean{Hopfield82.non_deleted_neuron_maintains_sign_of_activation}
+\uses{deleted_field_product_bound}
+\notready
+TO DO
+\end{definition}
+
+\begin{definition}\label{DeleteNeurons_with_Finset}
+%\lean{Hopfield82.DeleteNeurons_with_Finset}
+\uses{DeleteNeuron}
+When deleting neurons from a Finset, we can use Finset.toList to convert the Finset to a List.
+This matches the API needed by DeleteNeurons.
+\end{definition}
+
+\begin{definition}\label{fault_tolerance_bound}
+%\lean{Hopfield82.fault_tolerance_bound}
+\uses{deleted_field_product_bound}
+\leanok
+A Hopfield network can tolerate the failure of up to 10\% of its neurons
+    while maintaining all stored patterns as fixed points, provided:
+\begin{enumerate}
+\item The stored patterns are orthogonal
+\item The number of patterns is at most 10\% of the network size
+\end{enumerate}
+\end{definition}

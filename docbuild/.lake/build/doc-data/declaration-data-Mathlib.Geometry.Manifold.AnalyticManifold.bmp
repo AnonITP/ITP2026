@@ -1,0 +1,1 @@
+{"name":"Mathlib.Geometry.Manifold.AnalyticManifold","instances":[],"imports":["Init","Mathlib.Deprecated.AnalyticManifold"],"declarations":[]}

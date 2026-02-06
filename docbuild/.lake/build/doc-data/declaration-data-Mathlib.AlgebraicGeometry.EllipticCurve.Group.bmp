@@ -1,0 +1,1 @@
+{"name":"Mathlib.AlgebraicGeometry.EllipticCurve.Group","instances":[],"imports":["Init","Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Basic","Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Formula","Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point"],"declarations":[]}

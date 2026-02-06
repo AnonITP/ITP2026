@@ -1,0 +1,1 @@
+{"name":"Mathlib.Topology.GDelta.UniformSpace","instances":[],"imports":["Init","Mathlib.Topology.GDelta.MetrizableSpace","Mathlib.Topology.Separation.GDelta"],"declarations":[]}

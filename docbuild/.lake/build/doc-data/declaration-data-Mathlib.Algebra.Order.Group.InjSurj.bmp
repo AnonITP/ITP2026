@@ -1,0 +1,1 @@
+{"name":"Mathlib.Algebra.Order.Group.InjSurj","instances":[],"imports":["Init","Mathlib.Algebra.Order.Monoid.Basic","Mathlib.Tactic.Linter.DeprecatedModule"],"declarations":[]}

@@ -1,0 +1,1 @@
+{"name":"Mathlib.CategoryTheory.Monoidal.Yoneda","instances":[],"imports":["Init","Mathlib.CategoryTheory.Monoidal.Mon_"],"declarations":[]}

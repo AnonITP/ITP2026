@@ -1,0 +1,1 @@
+{"name":"Mathlib.AlgebraicGeometry.EllipticCurve.Affine","instances":[],"imports":["Init","Mathlib.Algebra.Polynomial.Bivariate","Mathlib.AlgebraicGeometry.EllipticCurve.Weierstrass","Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange"],"declarations":[]}

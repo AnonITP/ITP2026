@@ -1,0 +1,1 @@
+{"name":"HopfieldNet.Tools.ComputableReal.IsComputableC","instances":[],"imports":["Init","Mathlib.Analysis.InnerProductSpace.Basic","HopfieldNet.Tools.ComputableReal.SpecialFunctions.Sqrt","HopfieldNet.Tools.ComputableReal.IsComputable"],"declarations":[]}
