@@ -1,0 +1,1 @@
+{"name":"Mathlib.Tactic.FunProp.ContDiff","instances":[],"imports":["Init","Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas","Mathlib.Analysis.SpecialFunctions.ExpDeriv","Mathlib.Analysis.SpecialFunctions.Log.Deriv","Mathlib.Tactic.FunProp","Mathlib.Tactic.FunProp.Differentiable"],"declarations":[]}

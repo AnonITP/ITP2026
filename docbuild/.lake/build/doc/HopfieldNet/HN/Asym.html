@@ -1,0 +1,499 @@
+<html lang="en"><head><meta charset="UTF-8"></meta><meta name="viewport" content="width=device-width, initial-scale=1"></meta><link rel="stylesheet" href="../.././style.css"></link><link rel="icon" href="../.././favicon.svg"></link><link rel="mask-icon" href="../.././favicon.svg" color="#000000"></link><link rel="prefetch" href="../.././/declarations/declaration-data.bmp" as="image"></link><title>HopfieldNet.HN.Asym</title><script defer="true" src="../.././mathjax-config.js"></script><script defer="true" src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script><script defer="true" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script><script>const SITE_ROOT="../.././";</script><script>const MODULE_NAME="HopfieldNet.HN.Asym";</script><script type="module" src="../.././jump-src.js"></script><script type="module" src="../.././search.js"></script><script type="module" src="../.././expand-nav.js"></script><script type="module" src="../.././how-about.js"></script><script type="module" src="../.././instances.js"></script><script type="module" src="../.././importedBy.js"></script></head><body><input id="nav_toggle" type="checkbox"></input><header><h1><label for="nav_toggle"></label><span>Documentation</span></h1><h2 class="header_filename break_within"><span class="name">HopfieldNet</span>.<span class="name">HN</span>.<span class="name">Asym</span></h2><form id="search_form"><input type="text" name="q" autocomplete="off"></input>&#32;<button id="search_button" onclick="javascript: form.action='../.././search.html';">Search</button></form></header><nav class="internal_nav"><p><a href="#top">return to top</a></p><p class="gh_nav_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean">source</a></p><div class="imports"><details><summary>Imports</summary><ul><li><a href="../.././Init.html">Init</a></li><li><a href="../.././HopfieldNet/HN/Core.html">HopfieldNet.HN.Core</a></li><li><a href="../.././Mathlib/LinearAlgebra/Matrix/PosDef.html">Mathlib.LinearAlgebra.Matrix.PosDef</a></li></ul></details><details><summary>Imported by</summary><ul id="imported-by-HopfieldNet.HN.Asym" class="imported-by-list"></ul></details></div><div class="nav_link"><a class="break_within" href="#Matrix.IsAntisymm"><span class="name">Matrix</span>.<span class="name">IsAntisymm</span></a></div><div class="nav_link"><a class="break_within" href="#Matrix.IsAntisymm.ext_iff"><span class="name">Matrix</span>.<span class="name">IsAntisymm</span>.<span class="name">ext_iff</span></a></div><div class="nav_link"><a class="break_within" href="#AsymmetricHopfieldNetwork"><span class="name">AsymmetricHopfieldNetwork</span></a></div><div class="nav_link"><a class="break_within" href="#getAsymmetricDecomposition"><span class="name">getAsymmetricDecomposition</span></a></div><div class="nav_link"><a class="break_within" href="#localFieldAsym"><span class="name">localFieldAsym</span></a></div><div class="nav_link"><a class="break_within" href="#updateStateAsym"><span class="name">updateStateAsym</span></a></div><div class="nav_link"><a class="break_within" href="#updatedActValue"><span class="name">updatedActValue</span></a></div><div class="nav_link"><a class="break_within" href="#seqStatesAsym"><span class="name">seqStatesAsym</span></a></div><div class="nav_link"><a class="break_within" href="#isStableAsym"><span class="name">isStableAsym</span></a></div><div class="nav_link"><a class="break_within" href="#energyAsym"><span class="name">energyAsym</span></a></div><div class="nav_link"><a class="break_within" href="#potentialFunction"><span class="name">potentialFunction</span></a></div><div class="nav_link"><a class="break_within" href="#potential_function_bounded"><span class="name">potential_function_bounded</span></a></div><div class="nav_link"><a class="break_within" href="#updatedActValue_eq"><span class="name">updatedActValue_eq</span></a></div><div class="nav_link"><a class="break_within" href="#localFieldAsym_update"><span class="name">localFieldAsym_update</span></a></div><div class="nav_link"><a class="break_within" href="#s'_eq_s_update"><span class="name">s'_eq_s_update</span></a></div><div class="nav_link"><a class="break_within" href="#mkAsymmetricParams"><span class="name">mkAsymmetricParams</span></a></div><div class="nav_link"><a class="break_within" href="#iterateAsym"><span class="name">iterateAsym</span></a></div><div class="nav_link"><a class="break_within" href="#verifyStabilityAsym"><span class="name">verifyStabilityAsym</span></a></div></nav><main>
+<div class="mod_doc"><h1 class="markdown-heading" id="Asymmetric-Hopfield-Networks">Asymmetric Hopfield Networks <a class="hover-link" href="#Asymmetric-Hopfield-Networks">#</a></h1><p>This module provides an implementation of asymmetric Hopfield networks, which are neural networks
+with potentially non-symmetric weight matrices. Unlike standard Hopfield networks that require
+symmetric weights, asymmetric networks can converge under certain conditions.</p><h2 class="markdown-heading" id="Main-Components">Main Components <a class="hover-link" href="#Main-Components">#</a></h2><ul>
+<li><code><a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a></code>: A neural network structure with asymmetric weights</li>
+<li><code><a href="../.././HopfieldNet/HN/Asym.html#updateStateAsym">updateStateAsym</a></code>: A function for updating states in the asymmetric case</li>
+<li><code><a href="../.././HopfieldNet/HN/Asym.html#localFieldAsym">localFieldAsym</a></code>: A function computing local fields in asymmetric networks</li>
+<li><code><a href="../.././HopfieldNet/HN/Asym.html#energyAsym">energyAsym</a></code>: A modified energy function for asymmetric networks</li>
+</ul><h2 class="markdown-heading" id="Mathematical-Details">Mathematical Details <a class="hover-link" href="#Mathematical-Details">#</a></h2><p>The implementation is based on the decomposition of asymmetric weight matrices into:</p><ul>
+<li>An antisymmetric component A (where A_{ij} = -A_{ji})</li>
+<li>A positive definite symmetric component S</li>
+<li>A non-negative diagonal constraint</li>
+</ul><p>This decomposition allows us to analyze the dynamics and convergence properties
+of Hopfield networks with asymmetric weights.</p></div><div class="decl" id="Matrix.IsAntisymm"><div class="def"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L40-L41">source</a></div><div class="decl_header"><span class="decl_kind">def</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#Matrix.IsAntisymm"><span class="name">Matrix</span>.<span class="name">IsAntisymm</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">α</span> : <a href="../.././foundational_types.html">Type</a> u_1}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">n</span> : <a href="../.././foundational_types.html">Type</a> u_2}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Neg">Neg</a> <span class="fn">α</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">A</span> : <span class="fn"><a href="../.././Mathlib/Data/Matrix/Defs.html#Matrix">Matrix</a> <span class="fn">n</span> <span class="fn">n</span> <span class="fn">α</span></span>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><a href="../.././foundational_types.html">Prop</a></div></div><p>A matrix <code>A : <a href="../.././Mathlib/Data/Matrix/Defs.html#Matrix">Matrix</a> n n α</code> is &quot;antisymmetric&quot; if <code>Aᵀ = -A</code>.</p><details><summary>Equations</summary><ul class="equations"><li class="equation"><span class="fn"><span class="fn">A</span>.<a href="../.././HopfieldNet/HN/Asym.html#Matrix.IsAntisymm">IsAntisymm</a></span> <a href="../.././Init/Prelude.html#Eq">=</a> (<span class="fn"><span class="fn">A</span>.<a href="../.././Mathlib/Data/Matrix/Defs.html#Matrix.transpose">transpose</a></span> <a href="../.././Init/Prelude.html#Eq">=</a> <a href="../.././Init/Prelude.html#Neg.neg">-</a><span class="fn">A</span>)</li></ul></details><details id="instances-for-list-Matrix.IsAntisymm" class="instances-for-list"><summary>Instances For</summary><ul class="instances-for-enum"></ul></details></div></div><div class="decl" id="Matrix.IsAntisymm.ext_iff"><div class="theorem"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L43-L47">source</a></div><div class="attributes">@[simp]</div>
+<div class="decl_header"><span class="decl_kind">theorem</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#Matrix.IsAntisymm.ext_iff"><span class="name">Matrix</span>.<span class="name">IsAntisymm</span>.<span class="name">ext_iff</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">α</span> : <a href="../.././foundational_types.html">Type</a> u_1}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">n</span> : <a href="../.././foundational_types.html">Type</a> u_2}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Neg">Neg</a> <span class="fn">α</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">A</span> : <span class="fn"><a href="../.././Mathlib/Data/Matrix/Defs.html#Matrix">Matrix</a> <span class="fn">n</span> <span class="fn">n</span> <span class="fn">α</span></span>}</span></span>
+</span><span class="decl_args"> :</span><div class="decl_type"><span class="fn"><span class="fn">A</span>.<a href="../.././HopfieldNet/HN/Asym.html#Matrix.IsAntisymm">IsAntisymm</a></span> <a href="../.././Init/Core.html#Iff">↔</a> <span class="fn">∀ (<span class="fn">i </span><span class="fn">j</span> : <span class="fn">n</span>), <span class="fn"><span class="fn">A</span> <span class="fn">j</span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#Eq">=</a> <a href="../.././Init/Prelude.html#Neg.neg">-</a><span class="fn"><span class="fn">A</span> <span class="fn">i</span> <span class="fn">j</span></span></span></div></div></div></div><div class="decl" id="AsymmetricHopfieldNetwork"><div class="def"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L49-L101">source</a></div><div class="attributes">@[reducible, inline]</div>
+<div class="decl_header"><span class="decl_kind">abbrev</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork"><span class="name">AsymmetricHopfieldNetwork</span></a></span><span class="decl_args">
+<span class="fn">(<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>)</span></span>
+<span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="decl_args"> :</span><div class="decl_type"><span class="fn"><a href="../.././HopfieldNet/NN.html#NeuralNetwork">NeuralNetwork</a> <span class="fn">R</span> <span class="fn">U</span></span></div></div><p><code><a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a></code> defines a Hopfield network with asymmetric weights.
+Unlike standard Hopfield networks where weights must be symmetric,
+this variant allows for asymmetric weights that can be decomposed into
+an antisymmetric part and a positive definite symmetric part.</p><p>The network has:</p><ul>
+<li>Fully connected neurons (each neuron is connected to all others)</li>
+<li>No self-connections (zero diagonal in weight matrix)</li>
+<li>Asymmetric weights (w_ij can differ from w_ji)</li>
+<li>Weights that can be decomposed into antisymmetric and positive definite components</li>
+</ul><details><summary>Equations</summary><ul class="equations"><li class="equation">One or more equations did not get rendered due to their size.</li></ul></details><details id="instances-for-list-AsymmetricHopfieldNetwork" class="instances-for-list"><summary>Instances For</summary><ul class="instances-for-enum"></ul></details></div></div><div class="decl" id="getAsymmetricDecomposition"><div class="def"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L103-L119">source</a></div><div class="decl_header"><span class="decl_kind">def</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#getAsymmetricDecomposition"><span class="name">getAsymmetricDecomposition</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">wθ</span> : <span class="fn"><a href="../.././HopfieldNet/NN.html#Params">Params</a> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">hw'</span> : <span class="fn">∃ (<span class="fn">A</span> : <span class="fn"><a href="../.././Mathlib/Data/Matrix/Defs.html#Matrix">Matrix</a> <span class="fn">U</span> <span class="fn">U</span> <span class="fn">R</span></span>) (<span class="fn">S</span> : <span class="fn"><a href="../.././Mathlib/Data/Matrix/Defs.html#Matrix">Matrix</a> <span class="fn">U</span> <span class="fn">U</span> <span class="fn">R</span></span>), <span class="fn"><span class="fn">A</span>.<a href="../.././HopfieldNet/HN/Asym.html#Matrix.IsAntisymm">IsAntisymm</a></span> <a href="../.././Init/Prelude.html#And">∧</a> <span class="fn"><span class="fn">S</span>.<a href="../.././Mathlib/LinearAlgebra/Matrix/PosDef.html#Matrix.PosDef">PosDef</a></span> <a href="../.././Init/Prelude.html#And">∧</a> <span class="fn"><span class="fn">wθ</span>.<a href="../.././HopfieldNet/NN.html#Params.w">w</a></span> <a href="../.././Init/Prelude.html#Eq">=</a> <span class="fn">A</span> <a href="../.././Init/Prelude.html#HAdd.hAdd">+</a> <span class="fn">S</span> <a href="../.././Init/Prelude.html#And">∧</a> <span class="fn">∀ (<span class="fn">i</span> : <span class="fn">U</span>), <span class="fn"><span class="fn"><span class="fn">wθ</span>.<a href="../.././HopfieldNet/NN.html#Params.w">w</a></span> <span class="fn">i</span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#GE.ge">≥</a> <span class="fn">0</span></span></span>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><span class="fn"><a href="../.././Mathlib/Data/Matrix/Defs.html#Matrix">Matrix</a> <span class="fn">U</span> <span class="fn">U</span> <span class="fn">R</span></span> <a href="../.././Init/Prelude.html#Prod">×</a> <span class="fn"><a href="../.././Mathlib/Data/Matrix/Defs.html#Matrix">Matrix</a> <span class="fn">U</span> <span class="fn">U</span> <span class="fn">R</span></span></div></div><p>Extracts the antisymmetric and symmetric components from parameters that
+satisfy the asymmetric condition.</p><p>Parameters:</p><ul>
+<li>wθ: The Hopfield network parameters</li>
+<li>hw': Proof that the parameters satisfy the asymmetric condition</li>
+</ul><p>Returns:</p><ul>
+<li>A pair (A, S) where A is antisymmetric, S is positive definite, and w = A + S</li>
+</ul><details><summary>Equations</summary><ul class="equations"><li class="equation"><span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#getAsymmetricDecomposition">getAsymmetricDecomposition</a> <span class="fn">wθ</span> <span class="fn">hw'</span></span> <a href="../.././Init/Prelude.html#Eq">=</a> <a href="../.././Init/Prelude.html#Prod.mk">(</a><span class="fn">(<span class="fn">1</span> / <span class="fn">2</span>)</span> <a href="../.././Mathlib/Algebra/Notation/Defs.html#HSMul.hSMul">•</a> (<span class="fn"><span class="fn">wθ</span>.<a href="../.././HopfieldNet/NN.html#Params.w">w</a></span> <a href="../.././Init/Prelude.html#HSub.hSub">-</a> <span class="fn"><span class="fn"><span class="fn">wθ</span>.<a href="../.././HopfieldNet/NN.html#Params.w">w</a></span>.<a href="../.././Mathlib/Data/Matrix/Defs.html#Matrix.transpose">transpose</a></span>)<a href="../.././Init/Prelude.html#Prod.mk">,</a> <span class="fn">(<span class="fn">1</span> / <span class="fn">2</span>)</span> <a href="../.././Mathlib/Algebra/Notation/Defs.html#HSMul.hSMul">•</a> (<span class="fn"><span class="fn">wθ</span>.<a href="../.././HopfieldNet/NN.html#Params.w">w</a></span> <a href="../.././Init/Prelude.html#HAdd.hAdd">+</a> <span class="fn"><span class="fn"><span class="fn">wθ</span>.<a href="../.././HopfieldNet/NN.html#Params.w">w</a></span>.<a href="../.././Mathlib/Data/Matrix/Defs.html#Matrix.transpose">transpose</a></span>)<a href="../.././Init/Prelude.html#Prod.mk">)</a></li></ul></details><details id="instances-for-list-getAsymmetricDecomposition" class="instances-for-list"><summary>Instances For</summary><ul class="instances-for-enum"></ul></details></div></div><div class="decl" id="localFieldAsym"><div class="def"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L121-L134">source</a></div><div class="decl_header"><span class="decl_kind">def</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#localFieldAsym"><span class="name">localFieldAsym</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">wθ</span> : <span class="fn"><a href="../.././HopfieldNet/NN.html#Params">Params</a> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">s</span> : <span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">i</span> : <span class="fn">U</span>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><span class="fn">R</span></div></div><p>Computes the local field for a neuron in an asymmetric Hopfield network.</p><p>Parameters:</p><ul>
+<li>wθ: The parameters for the asymmetric Hopfield network</li>
+<li>s: The current state of the network</li>
+<li>i: The index of the neuron</li>
+</ul><p>Returns:</p><ul>
+<li>The local field (weighted sum of inputs minus threshold)</li>
+</ul><details><summary>Equations</summary><ul class="equations"><li class="equation"><span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#localFieldAsym">localFieldAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#Eq">=</a> <span class="fn">∑ <span class="fn">j</span> : <span class="fn">U</span>, <span class="fn"><span class="fn"><span class="fn">wθ</span>.<a href="../.././HopfieldNet/NN.html#Params.w">w</a></span> <span class="fn">i</span> <span class="fn">j</span></span> <a href="../.././Init/Prelude.html#HMul.hMul">*</a> <span class="fn"><span class="fn"><span class="fn">s</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State.act">act</a></span> <span class="fn">j</span></span></span> <a href="../.././Init/Prelude.html#HSub.hSub">-</a> <span class="fn"><span class="fn"><span class="fn">(<span class="fn"><span class="fn">wθ</span>.<a href="../.././HopfieldNet/NN.html#Params.θ">θ</a></span> <span class="fn">i</span>)</span>.<a href="../.././Init/Data/Vector/Basic.html#Vector.get">get</a></span> <span class="fn">0</span></span></li></ul></details><details id="instances-for-list-localFieldAsym" class="instances-for-list"><summary>Instances For</summary><ul class="instances-for-enum"></ul></details></div></div><div class="decl" id="updateStateAsym"><div class="def"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L136-L161">source</a></div><div class="decl_header"><span class="decl_kind">def</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#updateStateAsym"><span class="name">updateStateAsym</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">wθ</span> : <span class="fn"><a href="../.././HopfieldNet/NN.html#Params">Params</a> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">s</span> : <span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">i</span> : <span class="fn">U</span>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span></div></div><p>Updates a neuron state according to asymmetric update rules.</p><p>Parameters:</p><ul>
+<li>wθ: The parameters for the asymmetric Hopfield network</li>
+<li>s: The current state of the network</li>
+<li>i: The index of the neuron to update</li>
+</ul><p>Returns:</p><ul>
+<li>A new state with the selected neuron updated</li>
+</ul><details><summary>Equations</summary><ul class="equations"><li class="equation"><span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#updateStateAsym">updateStateAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#Eq">=</a>   <a href="../.././HopfieldNet/NN.html#NeuralNetwork.State.mk">{</a>     <span class="fn">act</span> := <span class="fn">fun (<span class="fn">j</span> : <span class="fn">U</span>) =&gt;
+      <a href="../.././Init/Prelude.html#ite">if</a> <span class="fn">j</span> <a href="../.././Init/Prelude.html#Eq">=</a> <span class="fn">i</span> <a href="../.././Init/Prelude.html#ite">then</a>
+        <span class="fn">let <span class="fn">lf</span> := <span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#localFieldAsym">localFieldAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">i</span></span>;
+        <a href="../.././Init/Prelude.html#ite">if</a> <span class="fn">lf</span> <a href="../.././Init/Prelude.html#LE.le">≤</a> <span class="fn">0</span> <a href="../.././Init/Prelude.html#ite">then</a> <span class="fn">-<span class="fn">1</span></span> <a href="../.././Init/Prelude.html#ite">else</a> <span class="fn">1</span></span>
+      <a href="../.././Init/Prelude.html#ite">else</a> <span class="fn"><span class="fn"><span class="fn">s</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State.act">act</a></span> <span class="fn">j</span></span></span>,
+    <span class="fn">hp</span> := <span class="fn">⋯</span> <a href="../.././HopfieldNet/NN.html#NeuralNetwork.State.mk">}</a></li></ul></details><details id="instances-for-list-updateStateAsym" class="instances-for-list"><summary>Instances For</summary><ul class="instances-for-enum"></ul></details></div></div><div class="decl" id="updatedActValue"><div class="def"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L163-L176">source</a></div><div class="decl_header"><span class="decl_kind">def</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#updatedActValue"><span class="name">updatedActValue</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">wθ</span> : <span class="fn"><a href="../.././HopfieldNet/NN.html#Params">Params</a> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">s</span> : <span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">i</span> : <span class="fn">U</span>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><span class="fn">R</span></div></div><p>Returns the updated activation value of a neuron after applying the asymmetric update rule.</p><p>Parameters:</p><ul>
+<li>wθ: The parameters for the asymmetric Hopfield network</li>
+<li>s: The current state of the network</li>
+<li>i: The index of the neuron</li>
+</ul><p>Returns:</p><ul>
+<li>The activation value after update</li>
+</ul><details><summary>Equations</summary><ul class="equations"><li class="equation"><span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#updatedActValue">updatedActValue</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#Eq">=</a> <span class="fn"><span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#updateStateAsym">updateStateAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">i</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State.act">act</a></span> <span class="fn">i</span></span></li></ul></details><details id="instances-for-list-updatedActValue" class="instances-for-list"><summary>Instances For</summary><ul class="instances-for-enum"></ul></details></div></div><div class="decl" id="seqStatesAsym"><div class="def"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L178-L192">source</a></div><div class="decl_header"><span class="decl_kind">def</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#seqStatesAsym"><span class="name">seqStatesAsym</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">wθ</span> : <span class="fn"><a href="../.././HopfieldNet/NN.html#Params">Params</a> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">s</span> : <span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">useq</span> : <span class="fn"><a href="../.././Init/Prelude.html#Nat">ℕ</a> → <span class="fn">U</span></span>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><span class="fn"><a href="../.././Init/Prelude.html#Nat">ℕ</a> → <span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span></span></div></div><p>Creates a sequence of state updates for an asymmetric Hopfield network.</p><p>Parameters:</p><ul>
+<li>wθ: The parameters for the asymmetric Hopfield network</li>
+<li>s: The initial state</li>
+<li>useq: A sequence of neurons to update</li>
+</ul><p>Returns:</p><ul>
+<li>A function mapping each time step to the corresponding state</li>
+</ul><details><summary>Equations</summary><ul class="equations"><li class="equation"><span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#seqStatesAsym">seqStatesAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">useq</span> <span class="fn">0</span></span> <a href="../.././Init/Prelude.html#Eq">=</a> <span class="fn">s</span></li><li class="equation"><span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#seqStatesAsym">seqStatesAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">useq</span> <span class="fn"><span class="fn">n</span>.<a href="../.././Init/Prelude.html#Nat.succ">succ</a></span></span> <a href="../.././Init/Prelude.html#Eq">=</a> <span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#updateStateAsym">updateStateAsym</a> <span class="fn">wθ</span> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#seqStatesAsym">seqStatesAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">useq</span> <span class="fn">n</span>)</span> <span class="fn">(<span class="fn">useq</span> <span class="fn">n</span>)</span></span></li></ul></details><details id="instances-for-list-seqStatesAsym" class="instances-for-list"><summary>Instances For</summary><ul class="instances-for-enum"></ul></details></div></div><div class="decl" id="isStableAsym"><div class="def"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L194-L207">source</a></div><div class="decl_header"><span class="decl_kind">def</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#isStableAsym"><span class="name">isStableAsym</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">wθ</span> : <span class="fn"><a href="../.././HopfieldNet/NN.html#Params">Params</a> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">s</span> : <span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><a href="../.././foundational_types.html">Prop</a></div></div><p>Checks if a state is stable in an asymmetric Hopfield network.
+A state is stable if no single-neuron update changes the state.</p><p>Parameters:</p><ul>
+<li>wθ: The parameters for the asymmetric Hopfield network</li>
+<li>s: The state to check</li>
+</ul><p>Returns:</p><ul>
+<li>True if the state is stable, false otherwise</li>
+</ul><details><summary>Equations</summary><ul class="equations"><li class="equation"><span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#isStableAsym">isStableAsym</a> <span class="fn">wθ</span> <span class="fn">s</span></span> <a href="../.././Init/Prelude.html#Eq">=</a> <span class="fn">∀ (<span class="fn">i</span> : <span class="fn">U</span>), <span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#updateStateAsym">updateStateAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#Eq">=</a> <span class="fn">s</span></span></li></ul></details><details id="instances-for-list-isStableAsym" class="instances-for-list"><summary>Instances For</summary><ul class="instances-for-enum"></ul></details></div></div><div class="decl" id="energyAsym"><div class="def"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L209-L226">source</a></div><div class="decl_header"><span class="decl_kind">def</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#energyAsym"><span class="name">energyAsym</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">wθ</span> : <span class="fn"><a href="../.././HopfieldNet/NN.html#Params">Params</a> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">s</span> : <span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><span class="fn">R</span></div></div><p>Get the energy of an asymmetric Hopfield network for a specific state.
+This is a modified energy function designed for asymmetric networks.</p><p>Parameters:</p><ul>
+<li>wθ: The parameters for the asymmetric Hopfield network</li>
+<li>s: The current state of the network</li>
+</ul><p>Returns:</p><ul>
+<li>The energy value of the network</li>
+</ul><details><summary>Equations</summary><ul class="equations"><li class="equation"><span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#energyAsym">energyAsym</a> <span class="fn">wθ</span> <span class="fn">s</span></span> <a href="../.././Init/Prelude.html#Eq">=</a>   <span class="fn"><span class="fn">-<span class="fn">1</span></span> / <span class="fn">2</span></span> <a href="../.././Init/Prelude.html#HMul.hMul">*</a> <span class="fn">∑ <span class="fn">i</span> : <span class="fn">U</span>, <span class="fn">∑ <span class="fn">j</span> : <span class="fn">U</span>, <span class="fn"><span class="fn"><span class="fn">wθ</span>.<a href="../.././HopfieldNet/NN.html#Params.w">w</a></span> <span class="fn">i</span> <span class="fn">j</span></span> <a href="../.././Init/Prelude.html#HMul.hMul">*</a> <span class="fn"><span class="fn"><span class="fn">s</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State.act">act</a></span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#HMul.hMul">*</a> <span class="fn"><span class="fn"><span class="fn">s</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State.act">act</a></span> <span class="fn">j</span></span></span></span> <a href="../.././Init/Prelude.html#HSub.hSub">-</a> <span class="fn">∑ <span class="fn">i</span> : <span class="fn">U</span>, <span class="fn"><span class="fn">(fun (<span class="fn">i</span> : <span class="fn">U</span>) =&gt; <span class="fn"><span class="fn"><span class="fn">(<span class="fn"><span class="fn">wθ</span>.<a href="../.././HopfieldNet/NN.html#Params.θ">θ</a></span> <span class="fn">i</span>)</span>.<a href="../.././Init/Data/Vector/Basic.html#Vector.get">get</a></span> <span class="fn">0</span></span>)</span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#HMul.hMul">*</a> <span class="fn"><span class="fn"><span class="fn">s</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State.act">act</a></span> <span class="fn">i</span></span></span></li></ul></details><details id="instances-for-list-energyAsym" class="instances-for-list"><summary>Instances For</summary><ul class="instances-for-enum"></ul></details></div></div><div class="decl" id="potentialFunction"><div class="def"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L228-L249">source</a></div><div class="decl_header"><span class="decl_kind">def</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#potentialFunction"><span class="name">potentialFunction</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">wθ</span> : <span class="fn"><a href="../.././HopfieldNet/NN.html#Params">Params</a> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">s</span> : <span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">k</span> : <a href="../.././Init/Prelude.html#Nat">ℕ</a>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">useq</span> : <span class="fn"><a href="../.././Init/Prelude.html#Nat">ℕ</a> → <span class="fn">U</span></span>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><span class="fn">R</span></div></div><p>Potential function for asymmetric Hopfield networks at time step k.
+This function is used to analyze the dynamics of the network during updates.</p><p>Parameters:</p><ul>
+<li>wθ: The parameters for the asymmetric Hopfield network</li>
+<li>s: The current state of the network</li>
+<li>k: The current time step</li>
+<li>useq: A sequence of neurons to update</li>
+</ul><p>Returns:</p><ul>
+<li>The potential value of the network</li>
+</ul><details><summary>Equations</summary><ul class="equations"><li class="equation"><span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#potentialFunction">potentialFunction</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">k</span> <span class="fn">useq</span></span> <a href="../.././Init/Prelude.html#Eq">=</a>   <span class="fn">∑ <span class="fn">i</span> : <span class="fn">U</span>,
+    <span class="fn">∑ <span class="fn">j</span> : <span class="fn">U</span>,
+      (<span class="fn"><span class="fn"><span class="fn">wθ</span>.<a href="../.././HopfieldNet/NN.html#Params.w">w</a></span> <span class="fn">i</span> <span class="fn">j</span></span> <a href="../.././Init/Prelude.html#HMul.hMul">*</a> <a href="../.././Init/Prelude.html#ite">if</a> <span class="fn">i</span> <a href="../.././Init/Prelude.html#Eq">=</a> <span class="fn"><span class="fn">useq</span> (<span class="fn">k</span> <a href="../.././Init/Prelude.html#HMod.hMod">%</a> <span class="fn"><a href="../.././Mathlib/Data/Fintype/Card.html#Fintype.card">Fintype.card</a> <span class="fn">U</span></span>)</span> <a href="../.././Init/Prelude.html#ite">then</a> <a href="../.././Init/Prelude.html#ite">if</a> <span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#localFieldAsym">localFieldAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#GT.gt">&gt;</a> <span class="fn">0</span> <a href="../.././Init/Prelude.html#ite">then</a> <span class="fn">1</span> <a href="../.././Init/Prelude.html#ite">else</a> <span class="fn">-<span class="fn">1</span></span> <a href="../.././Init/Prelude.html#ite">else</a> <span class="fn"><span class="fn"><span class="fn">s</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State.act">act</a></span> <span class="fn">i</span></span>) <a href="../.././Init/Prelude.html#HMul.hMul">*</a>         <span class="fn"><span class="fn"><span class="fn">s</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State.act">act</a></span> <span class="fn">j</span></span></span></span></li></ul></details><details id="instances-for-list-potentialFunction" class="instances-for-list"><summary>Instances For</summary><ul class="instances-for-enum"></ul></details></div></div><div class="decl" id="potential_function_bounded"><div class="theorem"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L252-L327">source</a></div><div class="attributes">@[simp]</div>
+<div class="decl_header"><span class="decl_kind">theorem</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#potential_function_bounded"><span class="name">potential_function_bounded</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">wθ</span> : <span class="fn"><a href="../.././HopfieldNet/NN.html#Params">Params</a> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">s</span> : <span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">k</span> : <a href="../.././Init/Prelude.html#Nat">ℕ</a>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">useq</span> : <span class="fn"><a href="../.././Init/Prelude.html#Nat">ℕ</a> → <span class="fn">U</span></span>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><span class="fn">∃ (<span class="fn">lowerBound</span> : <span class="fn">R</span>) (<span class="fn">upperBound</span> : <span class="fn">R</span>),
+  <span class="fn">lowerBound</span> <a href="../.././Init/Prelude.html#LE.le">≤</a> <span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#potentialFunction">potentialFunction</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">k</span> <span class="fn">useq</span></span> <a href="../.././Init/Prelude.html#And">∧</a> <span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#potentialFunction">potentialFunction</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">k</span> <span class="fn">useq</span></span> <a href="../.././Init/Prelude.html#LE.le">≤</a> <span class="fn">upperBound</span></span></div></div></div></div><div class="decl" id="updatedActValue_eq"><div class="theorem"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L330-L340">source</a></div><div class="attributes">@[simp]</div>
+<div class="decl_header"><span class="decl_kind">theorem</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#updatedActValue_eq"><span class="name">updatedActValue_eq</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">wθ</span> : <span class="fn"><a href="../.././HopfieldNet/NN.html#Params">Params</a> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">s</span> : <span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">i</span> : <span class="fn">U</span>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#updatedActValue">updatedActValue</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#Eq">=</a> <a href="../.././Init/Prelude.html#ite">if</a> <span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#localFieldAsym">localFieldAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#GT.gt">&gt;</a> <span class="fn">0</span> <a href="../.././Init/Prelude.html#ite">then</a> <span class="fn">1</span> <a href="../.././Init/Prelude.html#ite">else</a> <span class="fn">-<span class="fn">1</span></span></div></div></div></div><div class="decl" id="localFieldAsym_update"><div class="theorem"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L343-L360">source</a></div><div class="attributes">@[simp]</div>
+<div class="decl_header"><span class="decl_kind">theorem</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#localFieldAsym_update"><span class="name">localFieldAsym_update</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">wθ</span> : <span class="fn"><a href="../.././HopfieldNet/NN.html#Params">Params</a> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">s</span> : <span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">i</span> : <span class="fn">U</span>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#localFieldAsym">localFieldAsym</a> <span class="fn">wθ</span> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#updateStateAsym">updateStateAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">i</span>)</span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#Eq">=</a>   <span class="fn">(∑ <span class="fn">j</span> : <span class="fn">U</span>, <span class="fn"><span class="fn"><span class="fn">wθ</span>.<a href="../.././HopfieldNet/NN.html#Params.w">w</a></span> <span class="fn">i</span> <span class="fn">j</span></span> <a href="../.././Init/Prelude.html#HMul.hMul">*</a> <a href="../.././Init/Prelude.html#ite">if</a> <span class="fn">j</span> <a href="../.././Init/Prelude.html#Eq">=</a> <span class="fn">i</span> <a href="../.././Init/Prelude.html#ite">then</a> <span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#updatedActValue">updatedActValue</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#ite">else</a> <span class="fn"><span class="fn"><span class="fn">s</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State.act">act</a></span> <span class="fn">j</span></span>)</span> <a href="../.././Init/Prelude.html#HSub.hSub">-</a> <span class="fn"><span class="fn"><span class="fn">(<span class="fn"><span class="fn">wθ</span>.<a href="../.././HopfieldNet/NN.html#Params.θ">θ</a></span> <span class="fn">i</span>)</span>.<a href="../.././Init/Data/Vector/Basic.html#Vector.get">get</a></span> <span class="fn">0</span></span></div></div></div></div><div class="decl" id="s'_eq_s_update"><div class="theorem"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L363-L374">source</a></div><div class="attributes">@[simp]</div>
+<div class="decl_header"><span class="decl_kind">theorem</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#s'_eq_s_update"><span class="name">s'_eq_s_update</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">wθ</span> : <span class="fn"><a href="../.././HopfieldNet/NN.html#Params">Params</a> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">s</span> : <span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">i </span><span class="fn">j</span> : <span class="fn">U</span>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><span class="fn">let <span class="fn">s'</span> := <span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#updateStateAsym">updateStateAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">i</span></span>;
+<span class="fn"><span class="fn"><span class="fn">s'</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State.act">act</a></span> <span class="fn">j</span></span> <a href="../.././Init/Prelude.html#Eq">=</a> <a href="../.././Init/Prelude.html#ite">if</a> <span class="fn">j</span> <a href="../.././Init/Prelude.html#Eq">=</a> <span class="fn">i</span> <a href="../.././Init/Prelude.html#ite">then</a> <span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#updatedActValue">updatedActValue</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#ite">else</a> <span class="fn"><span class="fn"><span class="fn">s</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State.act">act</a></span> <span class="fn">j</span></span></span></div></div></div></div><div class="decl" id="mkAsymmetricParams"><div class="def"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L376-L399">source</a></div><div class="decl_header"><span class="decl_kind">def</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#mkAsymmetricParams"><span class="name">mkAsymmetricParams</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">w</span> : <span class="fn"><a href="../.././Mathlib/Data/Matrix/Defs.html#Matrix">Matrix</a> <span class="fn">U</span> <span class="fn">U</span> <span class="fn">R</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">θ</span> : <span class="fn"><span class="fn">U</span> → <span class="fn"><a href="../.././Init/Data/Vector/Basic.html#Vector">Vector</a> <span class="fn">R</span> <span class="fn">1</span></span></span>)</span></span>
+<span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">hw</span> : <span class="fn">∀ (<span class="fn">u </span><span class="fn">v</span> : <span class="fn">U</span>), <span class="fn"><a href="../.././Init/Prelude.html#Not">¬</a><span class="fn"><span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././Mathlib/Combinatorics/Digraph/Basic.html#Digraph.Adj">Adj</a></span> <span class="fn">u</span> <span class="fn">v</span></span> → <span class="fn"><span class="fn">w</span> <span class="fn">u</span> <span class="fn">v</span></span> <a href="../.././Init/Prelude.html#Eq">=</a> <span class="fn">0</span></span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">hasym</span> : <span class="fn">∃ (<span class="fn">A</span> : <span class="fn"><a href="../.././Mathlib/Data/Matrix/Defs.html#Matrix">Matrix</a> <span class="fn">U</span> <span class="fn">U</span> <span class="fn">R</span></span>) (<span class="fn">S</span> : <span class="fn"><a href="../.././Mathlib/Data/Matrix/Defs.html#Matrix">Matrix</a> <span class="fn">U</span> <span class="fn">U</span> <span class="fn">R</span></span>), <span class="fn"><span class="fn">A</span>.<a href="../.././HopfieldNet/HN/Asym.html#Matrix.IsAntisymm">IsAntisymm</a></span> <a href="../.././Init/Prelude.html#And">∧</a> <span class="fn"><span class="fn">S</span>.<a href="../.././Mathlib/LinearAlgebra/Matrix/PosDef.html#Matrix.PosDef">PosDef</a></span> <a href="../.././Init/Prelude.html#And">∧</a> <span class="fn">w</span> <a href="../.././Init/Prelude.html#Eq">=</a> <span class="fn">A</span> <a href="../.././Init/Prelude.html#HAdd.hAdd">+</a> <span class="fn">S</span> <a href="../.././Init/Prelude.html#And">∧</a> <span class="fn">∀ (<span class="fn">i</span> : <span class="fn">U</span>), <span class="fn"><span class="fn">w</span> <span class="fn">i</span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#GE.ge">≥</a> <span class="fn">0</span></span></span>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><span class="fn"><a href="../.././HopfieldNet/NN.html#Params">Params</a> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span></span></div></div><p>Helper function to create parameters for an asymmetric Hopfield network.</p><p>Parameters:</p><ul>
+<li>w: The weight matrix</li>
+<li>θ: The threshold function</li>
+<li>hw: A proof that weights respect the adjacency relation</li>
+<li>hasym: A proof that the weights can be decomposed appropriately</li>
+</ul><p>Returns:</p><ul>
+<li>Parameters for an asymmetric Hopfield network</li>
+</ul><details><summary>Equations</summary><ul class="equations"><li class="equation"><span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#mkAsymmetricParams">mkAsymmetricParams</a> <span class="fn">w</span> <span class="fn">θ</span> <span class="fn">hw</span> <span class="fn">hasym</span></span> <a href="../.././Init/Prelude.html#Eq">=</a> <a href="../.././HopfieldNet/NN.html#Params.mk">{</a> <span class="fn">w</span> := <span class="fn">w</span>, <span class="fn">hw</span> := <span class="fn">hw</span>, <span class="fn">hw'</span> := <span class="fn">hasym</span>, <span class="fn">σ</span> := <span class="fn">fun (<span class="fn">x</span> : <span class="fn">U</span>) =&gt; <span class="fn"><a href="../.././Init/Data/Vector/Basic.html#Vector.mkEmpty">Vector.mkEmpty</a> <span class="fn">0</span></span></span>, <span class="fn">θ</span> := <span class="fn">θ</span> <a href="../.././HopfieldNet/NN.html#Params.mk">}</a></li></ul></details><details id="instances-for-list-mkAsymmetricParams" class="instances-for-list"><summary>Instances For</summary><ul class="instances-for-enum"></ul></details></div></div><div class="decl" id="iterateAsym"><div class="def"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L401-L428">source</a></div><div class="decl_header"><span class="decl_kind">def</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#iterateAsym"><span class="name">iterateAsym</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">wθ</span> : <span class="fn"><a href="../.././HopfieldNet/NN.html#Params">Params</a> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">s</span> : <span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span>)</span></span>
+<span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">useq</span> : <span class="fn"><a href="../.././Init/Prelude.html#Nat">ℕ</a> → <span class="fn">U</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">_hf</span> : <span class="fn"><a href="../.././HopfieldNet/HN/aux.html#fair">fair</a> <span class="fn">useq</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">N</span> : <a href="../.././Init/Prelude.html#Nat">ℕ</a> := <span class="fn"><a href="../.././Mathlib/Data/Fintype/Card.html#Fintype.card">Fintype.card</a> <span class="fn">U</span></span> <a href="../.././Init/Prelude.html#HMul.hMul">*</a> <span class="fn">10</span>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span></div></div><p>Attempts to find a stable state of an asymmetric Hopfield network by running a fixed number of updates.</p><p>Unlike symmetric Hopfield networks, asymmetric networks do NOT generally guarantee convergence to fixed points.
+Convergence properties depend on the specific structure of the weight matrix decomposition:</p><ol>
+<li>When the symmetric positive definite component (S) dominates the antisymmetric component (A),
+the network is more likely to converge to fixed points</li>
+<li>When the antisymmetric component dominates, the network may exhibit limit cycles or chaotic behavior</li>
+<li>For balanced cases, behavior depends on initial conditions and update sequence</li>
+</ol><p>This function runs for N iterations and returns the resulting state, which may or may not be stable.</p><p>Parameters:</p><ul>
+<li>wθ: The parameters for the asymmetric Hopfield network</li>
+<li>s: The initial state</li>
+<li>useq: A sequence of neurons to update</li>
+<li>hf: A proof that the update sequence is fair</li>
+<li>N: The maximum number of iterations (defaults to 10 times the network size -
+for different AHNs, different N values might be needed,)</li>
+</ul><p>Returns:</p><ul>
+<li>The state after N iterations, with no guarantee of stability</li>
+</ul><details><summary>Equations</summary><ul class="equations"><li class="equation"><span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#iterateAsym">iterateAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">useq</span> <span class="fn">_hf</span> <span class="fn">N</span></span> <a href="../.././Init/Prelude.html#Eq">=</a> <span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#seqStatesAsym">seqStatesAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">useq</span> <span class="fn">N</span></span></li></ul></details><details id="instances-for-list-iterateAsym" class="instances-for-list"><summary>Instances For</summary><ul class="instances-for-enum"></ul></details></div></div><div class="decl" id="verifyStabilityAsym"><div class="def"><div class="gh_link"><a href="https://github.com/mkaratarakis/HopfieldNet/blob/d669253cbe19c6ce4cd103939fa32fb81c26d54b/HopfieldNet/HN/Asym.lean#L430-L441">source</a></div><div class="decl_header"><span class="decl_kind">def</span>
+<span class="decl_name"><a class="break_within" href="../.././HopfieldNet/HN/Asym.html#verifyStabilityAsym"><span class="name">verifyStabilityAsym</span></a></span><span class="impl_arg"><span class="decl_args">
+<span class="fn">{<span class="fn">R </span><span class="fn">U</span> : <a href="../.././foundational_types.html">Type</a>}</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Field/Defs.html#Field">Field</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Order/Defs/LinearOrder.html#LinearOrder">LinearOrder</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Order/Ring/Defs.html#IsStrictOrderedRing">IsStrictOrderedRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Algebra/Star/Basic.html#StarRing">StarRing</a> <span class="fn">R</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#DecidableEq">DecidableEq</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Mathlib/Data/Fintype/Defs.html#Fintype">Fintype</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="impl_arg"><span class="decl_args">
+<span class="fn">[<span class="fn"><a href="../.././Init/Prelude.html#Nonempty">Nonempty</a> <span class="fn">U</span></span>]</span></span>
+</span><span class="decl_args">
+<span class="fn">(<span class="fn">wθ</span> : <span class="fn"><a href="../.././HopfieldNet/NN.html#Params">Params</a> <span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">s</span> : <span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#AsymmetricHopfieldNetwork">AsymmetricHopfieldNetwork</a> <span class="fn">R</span> <span class="fn">U</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State">State</a></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">useq</span> : <span class="fn"><a href="../.././Init/Prelude.html#Nat">ℕ</a> → <span class="fn">U</span></span>)</span></span>
+<span class="decl_args">
+<span class="fn">(<span class="fn">N</span> : <a href="../.././Init/Prelude.html#Nat">ℕ</a>)</span></span>
+<span class="decl_args"> :</span><div class="decl_type"><a href="../.././Init/Prelude.html#Bool">Bool</a></div></div><p>Checks whether the network has stabilized after N iterations by comparing states
+across multiple time points.</p><details><summary>Equations</summary><ul class="equations"><li class="equation"><span class="fn"><a href="../.././HopfieldNet/HN/Asym.html#verifyStabilityAsym">verifyStabilityAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">useq</span> <span class="fn">N</span></span> <a href="../.././Init/Prelude.html#Eq">=</a>   <span class="fn"><a href="../.././Init/Prelude.html#Decidable.decide">decide</a> <span class="fn">(∀ (<span class="fn">i</span> : <span class="fn">U</span>), <span class="fn"><span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#seqStatesAsym">seqStatesAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">useq</span> <span class="fn">N</span>)</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State.act">act</a></span> <span class="fn">i</span></span> <a href="../.././Init/Prelude.html#Eq">=</a> <span class="fn"><span class="fn"><span class="fn">(<a href="../.././HopfieldNet/HN/Asym.html#seqStatesAsym">seqStatesAsym</a> <span class="fn">wθ</span> <span class="fn">s</span> <span class="fn">useq</span> (<span class="fn">N</span> <a href="../.././Init/Prelude.html#HAdd.hAdd">+</a> <span class="fn">1</span>))</span>.<a href="../.././HopfieldNet/NN.html#NeuralNetwork.State.act">act</a></span> <span class="fn">i</span></span>)</span></span></li></ul></details><details id="instances-for-list-verifyStabilityAsym" class="instances-for-list"><summary>Instances For</summary><ul class="instances-for-enum"></ul></details></div></div></main>
+<nav class="nav"><iframe src="../.././navbar.html" class="navframe" frameBorder="0"></iframe></nav></body></html>

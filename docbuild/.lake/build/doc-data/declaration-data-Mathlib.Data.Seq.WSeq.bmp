@@ -1,0 +1,1 @@
+{"name":"Mathlib.Data.Seq.WSeq","instances":[],"imports":["Init","Mathlib.Data.WSeq.Basic","Mathlib.Data.WSeq.Defs","Mathlib.Data.WSeq.Productive","Mathlib.Data.WSeq.Relation"],"declarations":[]}

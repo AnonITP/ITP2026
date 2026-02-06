@@ -1,0 +1,1 @@
+{"name":"Mathlib.CategoryTheory.Bicategory.NaturalTransformation.Strong","instances":[],"imports":["Init","Mathlib.CategoryTheory.Bicategory.Functor.Pseudofunctor","Mathlib.CategoryTheory.Bicategory.NaturalTransformation.Oplax"],"declarations":[]}

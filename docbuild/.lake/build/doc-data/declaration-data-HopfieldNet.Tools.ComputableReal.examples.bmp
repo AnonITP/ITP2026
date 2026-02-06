@@ -1,0 +1,1 @@
+{"name":"HopfieldNet.Tools.ComputableReal.examples","instances":[],"imports":["Init","HopfieldNet.Tools.ComputableReal.ComputableReal","Mathlib.Probability.Distributions.Gamma"],"declarations":[]}

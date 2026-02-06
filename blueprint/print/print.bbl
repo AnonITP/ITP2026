@@ -1,0 +1,46 @@
+\begin{thebibliography}{1}
+
+\bibitem{geman}
+Stuart Geman and Donald Geman.
+\newblock {S}tochastic {R}elaxation, {G}ibbs {D}istributions, and the
+  {B}ayesian {R}estoration of {I}mages.
+\newblock {\em IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  PAMI-6(6):721--741, 1984.
+
+\bibitem{hastings}
+W.~K. Hastings.
+\newblock {M}onte {C}arlo {S}ampling {M}ethods {U}sing {M}arkov {C}hains and
+  {T}heir {A}pplications.
+\newblock {\em Biometrika}, 57(1):97--109, 04 1970.
+
+\bibitem{hopfield1982neural}
+John~J Hopfield.
+\newblock {N}eural {N}etworks and {P}hysical {S}ystems with {E}mergent
+  {C}ollective {C}omputational {A}bilities.
+\newblock {\em Proceedings of the national academy of sciences},
+  79(8):2554--2558, 1982.
+
+\bibitem{kirk}
+S.~Kirkpatrick, C.~D. Gelatt, and M.~P. Vecchi.
+\newblock {O}ptimization by {S}imulated {A}nnealing.
+\newblock {\em Science}, 220(4598):671--680, 1983.
+
+\bibitem{comp}
+Rudolf Kruse, Christian Borgelt, Christian Braune, Sanaz Mostaghim, Matthias
+  Steinbrecher, Frank Klawonn, and Christian Moewes.
+\newblock {\em {C}omputational {I}ntelligence}.
+\newblock Springer, 2011.
+
+\bibitem{levin}
+David~A Levin and Yuval Peres.
+\newblock {\em {M}arkov {C}hains and {M}ixing {T}imes}, volume 107.
+\newblock American Mathematical Soc., 2017.
+
+\bibitem{metropolis}
+Nicholas Metropolis, Arianna~W. Rosenbluth, Marshall~N. Rosenbluth, Augusta~H.
+  Teller, and Edward Teller.
+\newblock {E}quation of {S}tate {C}alculations by {F}ast {C}omputing
+  {M}achines.
+\newblock {\em The Journal of Chemical Physics}, 21(6):1087--1092, 06 1953.
+
+\end{thebibliography}

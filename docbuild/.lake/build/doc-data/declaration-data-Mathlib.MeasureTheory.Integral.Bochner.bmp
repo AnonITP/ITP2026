@@ -1,0 +1,1 @@
+{"name":"Mathlib.MeasureTheory.Integral.Bochner","instances":[],"imports":["Init","Mathlib.MeasureTheory.Integral.Bochner.Basic","Mathlib.MeasureTheory.Integral.Bochner.L1","Mathlib.MeasureTheory.Integral.Bochner.VitaliCaratheodory"],"declarations":[]}

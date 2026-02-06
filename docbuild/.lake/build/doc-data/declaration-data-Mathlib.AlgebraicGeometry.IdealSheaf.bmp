@@ -1,0 +1,1 @@
+{"name":"Mathlib.AlgebraicGeometry.IdealSheaf","instances":[],"imports":["Init","Mathlib.AlgebraicGeometry.IdealSheaf.Subscheme"],"declarations":[]}

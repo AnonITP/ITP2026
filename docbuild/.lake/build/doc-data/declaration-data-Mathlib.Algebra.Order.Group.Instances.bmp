@@ -1,0 +1,1 @@
+{"name":"Mathlib.Algebra.Order.Group.Instances","instances":[],"imports":["Init","Mathlib.Algebra.Order.Group.Defs","Mathlib.Algebra.Order.Monoid.OrderDual","Mathlib.Tactic.Linter.DeprecatedModule"],"declarations":[]}
