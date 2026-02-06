@@ -1,1 +1,0 @@
-{"name":"Mathlib.RingTheory.Ideal.AssociatedPrime","instances":[],"imports":["Init","Mathlib.RingTheory.Ideal.AssociatedPrime.Basic","Mathlib.Tactic.Linter.DeprecatedModule"],"declarations":[]}

@@ -1,1 +1,0 @@
-{"name":"Mathlib.NumberTheory.NumberField.Embeddings","instances":[],"imports":["Init","Mathlib.NumberTheory.NumberField.InfinitePlace.Ramification","Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex"],"declarations":[]}
