@@ -1,7 +1,7 @@
 import HopfieldNet.Digraph.HN.Core
 
 set_option linter.unusedVariables false
---set_option maxHeartbeats 500000
+set_option maxHeartbeats 500000
 
 open Mathlib Finset
 
