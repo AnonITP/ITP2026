@@ -1,9 +1,7 @@
-
-import HopfieldNet.Digraph.NN
+import HopfieldNet.Digraph.NN.Core
 import Mathlib.Analysis.Normed.Field.Lemmas
 
 set_option linter.unusedVariables false
-set_option maxHeartbeats 500000
 
 open Mathlib Finset
 

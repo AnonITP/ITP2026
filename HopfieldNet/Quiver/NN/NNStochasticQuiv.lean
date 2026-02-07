@@ -1,4 +1,4 @@
-import HopfieldNet.Quiver.NN.NNquiv
+import HopfieldNet.Quiver.NN.Main
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
 /-- Probability Mass Function over Neural Network States -/

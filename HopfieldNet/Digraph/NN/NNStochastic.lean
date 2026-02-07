@@ -1,4 +1,4 @@
-import HopfieldNet.Digraph.NN.NN
+import HopfieldNet.Digraph.NN.Core
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
 /-- Probability Mass Function over Neural Network States -/

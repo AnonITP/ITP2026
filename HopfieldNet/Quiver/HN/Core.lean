@@ -2,7 +2,7 @@ import Mathlib.LinearAlgebra.Matrix.Symmetric
 import Mathlib.Data.Matrix.Reflection
 import Mathlib.Data.Vector.Defs
 import Init.Data.Vector.Lemmas
-import HopfieldNet.Quiver.NN.NNquiv
+import HopfieldNet.Quiver.NN.Main
 import HopfieldNet.aux
 import Mathlib.Tactic
 

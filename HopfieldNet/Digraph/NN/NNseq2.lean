@@ -2,7 +2,7 @@ import Mathlib.Combinatorics.Digraph.Basic
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Data.Vector.Basic
 import Mathlib.Analysis.SpecialFunctions.Exp
-import HopfieldNet.Digraph.NN.NN
+import HopfieldNet.Digraph.NN.Core
 
 namespace SequentialCase
 

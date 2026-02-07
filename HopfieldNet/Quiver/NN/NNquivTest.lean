@@ -1,4 +1,4 @@
-import HopfieldNet.Quiver.NN.NNquiv
+import HopfieldNet.Quiver.NN.Main
 
 open Mathlib Finset BigOperators
 
