@@ -12,7 +12,6 @@ import MCMC.Finite.MetropolisHastings
 set_option linter.unusedSectionVars false
 set_option linter.unusedVariables false
 
-
 namespace MCMC.Finite
 
 open Matrix Finset --Real

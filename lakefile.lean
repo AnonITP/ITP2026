@@ -21,10 +21,10 @@ lean_lib MCMC where
 lean_lib «NeuralNetwork» where
   -- Builds the `NeuralNetwork.*` modules living under the top-level `NeuralNetwork/` directory.
 
-lean_lib GibbsMeasure where
-  -- Builds the `GibbsMeasure.*` modules living under the top-level `GibbsMeasure/` directory.
+-- lean_lib GibbsMeasure where
+--   -- Builds the `GibbsMeasure.*` modules living under the top-level `GibbsMeasure/` directory.
 
-lean_lib Optlib where
+--lean_lib Optlib where
 
 lean_lib PhysLean where
 

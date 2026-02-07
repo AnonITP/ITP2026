@@ -1,6 +1,5 @@
 import MCMC.Finite.Core
 
-
 namespace MCMC.Finite
 
 open Matrix Finset-- Real
