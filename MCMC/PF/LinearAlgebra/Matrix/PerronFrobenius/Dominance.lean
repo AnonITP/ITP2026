@@ -101,13 +101,18 @@ lemma aligned_of_all_nonneg_re_im {i : n} {x : n → ℂ}
   intro j hz_ne_zero
   have hs_ne_zero : s ≠ 0 := by
     intro hs
-    have h_norms_zero : ∑ j, ‖z j‖ = 0 := by aesop
-    have h_all_zero : ∀ k, ‖z k‖ = 0 := by
-      intro k
-      exact eq_zero_of_sum_eq_zero (fun k => ‖z k‖) (fun _ => norm_nonneg _) h_norms_zero k
-    have h_zj_zero : z j = 0 := by
-      apply norm_eq_zero.mp; simpa using h_all_zero j
-    exact hz_ne_zero h_zj_zero
+    have hsum : (∑ k, ‖z k‖) = 0 := by
+      calc
+        (∑ k, ‖z k‖) = ‖s‖ := by simpa using h_z_sum.symm
+        _ = 0 := by simpa [hs] using (norm_zero : ‖(0 : ℂ)‖ = 0)
+    have hzj_norm0 : ‖z j‖ = 0 := by
+      have hnonneg : ∀ k, 0 ≤ ‖z k‖ := fun _ => norm_nonneg _
+      exact
+        (Finset.sum_eq_zero_iff_of_nonneg (s := Finset.univ) (fun k _ => hnonneg k)).1 hsum
+          j (by simp)
+    exact hz_ne_zero (by
+      have : z j = 0 := norm_eq_zero.mp hzj_norm0
+      simpa [z] using this)
   have h_align :=
     Complex.each_term_is_nonneg_real_multiple_of_sum_of_triangle_eq (s := Finset.univ)
       (v := z) (u := s) (by simp [s]) (by simpa [s] using h_z_sum) hs_ne_zero
@@ -157,8 +162,7 @@ lemma pow_eigenvector_of_eigenvector [DecidableEq n] [CommSemiring R]
   {A : Matrix n n R} {r : R} {v : n → R} (h_eig : A *ᵥ v = r • v) (m : ℕ) :
   (A ^ m) *ᵥ v = (r ^ m) • v := by
   induction m with
-  | zero =>
-  simp [pow_zero]
+  | zero => simp [pow_zero]
   | succ m ih =>
   calc
     (A ^ m.succ) *ᵥ v = (A ^ m * A) *ᵥ v := ?_
@@ -238,7 +242,7 @@ variable {n : Type*} [Fintype n] [Nonempty n] [DecidableEq n]
 variable {A : Matrix n n ℝ}
 
 /--
-Under the conditions of the main theorem, the eigenvalue `lam` must be non-zero.
+Under the conditions of the main theorem, the eigenvalue `lamda` must be non-zero.
 -/
 lemma eigenvalue_ne_zero_of_irreducible
     {A : Matrix n n ℝ} (hA_irred : A.IsIrreducible)
@@ -294,35 +298,32 @@ theorem eigenvalue_is_perron_root_of_positive_eigenvector
     exact ⟨v, ⟨hv_nonneg, hv_ne_zero⟩, rfl⟩
   exact le_antisymm h_le h_ge
 
-theorem perronRoot_transpose_eq
-    (A : Matrix n n ℝ) (hA_irred : A.IsIrreducible) :
+theorem perronRoot_transpose_eq (A : Matrix n n ℝ) (hA_irred : A.IsIrreducible) :
     perronRoot_alt A = perronRoot_alt Aᵀ := by
   obtain ⟨r, v, hr_pos, hv_pos, hv_eig⟩ :=
     exists_positive_eigenvector_of_irreducible hA_irred
   have hr_eq_perron : r = perronRoot_alt A :=
     eigenvalue_is_perron_root_of_positive_eigenvector
       hA_irred hA_irred.nonneg hr_pos hv_pos hv_eig
-  have hAT_irred : Aᵀ.IsIrreducible :=
-    Matrix.IsIrreducible.transpose hA_irred
   obtain ⟨r', u, hr'_pos, hu_pos, hu_eig_T⟩ :=
-    exists_positive_eigenvector_of_irreducible hAT_irred
+    exists_positive_eigenvector_of_irreducible
+      (Matrix.IsIrreducible.transpose hA_irred)
   have hr'_eq_perron : r' = perronRoot_alt Aᵀ :=
     eigenvalue_is_perron_root_of_positive_eigenvector
-      hAT_irred (fun i j ↦ hA_irred.nonneg j i) hr'_pos hu_pos hu_eig_T
+      (Matrix.IsIrreducible.transpose hA_irred)
+      (fun i j ↦ hA_irred.nonneg j i) hr'_pos hu_pos hu_eig_T
   have hu_eig_left : u ᵥ* A = r' • u := by
-    have : Aᵀ *ᵥ u = r' • u := hu_eig_T
-    simpa [vecMul_eq_mulVec_transpose] using this
+    simpa [vecMul_eq_mulVec_transpose] using hu_eig_T
   have hv_nonneg : ∀ i, 0 ≤ v i := fun i ↦ (hv_pos i).le
   have hv_ne_zero : v ≠ 0 := by
-    intro h
-    have : 0 < v (Classical.arbitrary n) := hv_pos _
-    simp only [h, Pi.zero_apply, lt_self_iff_false] at this
+    intro hv
+    exact (ne_of_gt (hv_pos (Classical.arbitrary n))) (by simp [hv])
   have h_dot_pos : 0 < u ⬝ᵥ v :=
     dotProduct_pos_of_pos_of_nonneg_ne_zero hu_pos hv_nonneg hv_ne_zero
   have h1 : u ⬝ᵥ (A *ᵥ v) = r * (u ⬝ᵥ v) := by
-    simp only [hv_eig, dotProduct_smul, smul_eq_mul]
+    simp [hv_eig, dotProduct_smul, smul_eq_mul]
   have h2 : (u ᵥ* A) ⬝ᵥ v = r' * (u ⬝ᵥ v) := by
-    simp only [hu_eig_left, smul_dotProduct, smul_eq_mul]
+    simp [hu_eig_left, smul_dotProduct, smul_eq_mul]
   have h_eq : r * (u ⬝ᵥ v) = r' * (u ⬝ᵥ v) := by
     calc
       r * (u ⬝ᵥ v) = u ⬝ᵥ (A *ᵥ v) := (h1.symm)
@@ -698,25 +699,25 @@ lemma phase_aligned_trivial
     rw [hi, hj]
   simp only [hij]
 
-/-- For an irreducible matrix, every row has at least one positive entry. -/
-lemma IsIrreducible.exists_pos_entry_in_row {A : Matrix n n ℝ} (hA_irred : A.IsIrreducible) (i : n) :
-    ∃ j, 0 < A i j := by
-  by_contra h_no_pos
-  push_neg at h_no_pos
-  have h_row_zero : ∀ j, A i j = 0 := by
-    intro j
-    have h_nonneg := hA_irred.nonneg i j
-    have h_not_pos := h_no_pos j
-    exact le_antisymm (h_no_pos j) h_nonneg
-  obtain ⟨i₀, j₀, hA_pos⟩ := Matrix.Irreducible.exists_pos_entry (A := A) hA_irred
-  letI : Quiver n := toQuiver A
-  have hconn := hA_irred.connected i j₀
-  obtain ⟨p, hp_pos⟩ := hconn
-  have h_pos : p.length > 0 := hp_pos
-  obtain ⟨c, e, p', hp_eq, hp_len_eq⟩ :=
-    Quiver.Path.path_decomposition_first_edge p h_pos
-  have hic_pos : 0 < A i c := e.down
-  exact (h_row_zero c).symm.not_lt hic_pos
+-- /-- For an irreducible matrix, every row has at least one positive entry. -/
+-- lemma IsIrreducible.exists_pos_entry_in_row {A : Matrix n n ℝ} (hA_irred : A.IsIrreducible) (i : n) :
+--     ∃ j, 0 < A i j := by
+--   by_contra h_no_pos
+--   push_neg at h_no_pos
+--   have h_row_zero : ∀ j, A i j = 0 := by
+--     intro j
+--     have h_nonneg := hA_irred.nonneg i j
+--     have h_not_pos := h_no_pos j
+--     exact le_antisymm (h_no_pos j) h_nonneg
+--   obtain ⟨i₀, j₀, hA_pos⟩ := Matrix.Irreducible.exists_pos_entry (A := A) hA_irred
+--   letI : Quiver n := toQuiver A
+--   have hconn := hA_irred.connected i j₀
+--   obtain ⟨p, hp_pos⟩ := hconn
+--   have h_pos : p.length > 0 := hp_pos
+--   obtain ⟨c, e, p', hp_eq, hp_len_eq⟩ :=
+--     Quiver.Path.path_decomposition_first_edge p h_pos
+--   have hic_pos : 0 < A i c := e.down
+--   exact (h_row_zero c).symm.not_lt hic_pos
 
 /-- If a complex number z ≠ 0 is a positive real multiple of another complex number w ≠ 0,
     then they have the same phase (z/|z| = w/|w|). -/
@@ -1030,7 +1031,6 @@ lemma eigenvector_phase_aligned_of_primitive
     (h_x_abs_eig : A *ᵥ (fun i ↦ ‖x i‖) = (perronRoot_alt A) • (fun i ↦ ‖x i‖))
     (hx_abs_pos : ∀ i, 0 < ‖x i‖) :
     ∃ c : ℂ, ‖c‖ = 1 ∧ x = fun i ↦ c * ‖x i‖ := by
-  classical
   let i₀ : n := Classical.arbitrary _
   let c   : ℂ := x i₀ / ‖x i₀‖
   have hc_norm : ‖c‖ = 1 := by

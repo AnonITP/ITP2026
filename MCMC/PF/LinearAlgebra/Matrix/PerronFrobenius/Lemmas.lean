@@ -4,16 +4,16 @@ import MCMC.PF.Combinatorics.Quiver.Path
 
 namespace Matrix
 section PerronFrobenius
+
 open Matrix Finset Quiver Quiver.Path
-variable {n : Type*}
+
+variable {n : Type*} {A : Matrix n n ℝ}
 
 --open Quiver.Path
 
 /-- A path in the submatrix `A.submatrix Subtype.val Subtype.val` lifts to a path in the
 original quiver `toQuiver A`, and all vertices along that lifted path lie in `S`. -/
-theorem path_in_submatrix_to_original [DecidableEq n] {A : Matrix n n ℝ}
-  (S : Set n) [DecidablePred S]
-  {i j : S}
+theorem path_in_submatrix_to_original (S : Set n) [DecidablePred S] {i j : S}
   (p : @Quiver.Path S (letI := Matrix.toQuiver A; inducedQuiver S) i j) :
   letI : Quiver n := Matrix.toQuiver A
   letI : Quiver S := inducedQuiver S
@@ -24,9 +24,9 @@ theorem path_in_submatrix_to_original [DecidableEq n] {A : Matrix n n ℝ}
   let p' := (Subquiver.embedding S).mapPath p
   exact ⟨p', Subquiver.mapPath_embedding_vertices_in_set S p⟩
 
+
 /-- A path exists between vertices in `S` using only vertices in `S` when the submatrix is irreducible -/
-theorem path_exists_in_support_of_irreducible [DecidableEq n] {A : Matrix n n ℝ}
-    (S : Set n) [DecidablePred S]
+theorem path_exists_in_support_of_irreducible (S : Set n) [DecidablePred S]
     (hS : IsIrreducible (A.submatrix (Subtype.val : S → n) (Subtype.val : S → n)))
     (i j : n) (hi : i ∈ S) (hj : j ∈ S) :
   letI : Quiver n := Matrix.toQuiver A
@@ -57,10 +57,8 @@ theorem path_exists_in_support_of_irreducible [DecidableEq n] {A : Matrix n n �
   obtain ⟨p, hp⟩ := path_in_submatrix_to_original S p_sub'
   exact ⟨p, hp⟩
 
-lemma positive_mul_vec_pos [Fintype n]
-    {A : Matrix n n ℝ} (hA_pos : ∀ i j, 0 < A i j)
-    {x : n → ℝ} (hx_nonneg : ∀ i, 0 ≤ x i) (hx_ne_zero : x ≠ 0) :
-    ∀ i, 0 < (A.mulVec x) i := by
+lemma positive_mul_vec_pos [Fintype n] (hA_pos : ∀ i j, 0 < A i j) {x : n → ℝ}
+   (hx_nonneg : ∀ i, 0 ≤ x i) (hx_ne_zero : x ≠ 0) : ∀ i, 0 < (A.mulVec x) i := by
   intro i
   --  `A.mulVec x i = ∑ j, A i j * x j`
   simp only [Matrix.mulVec, dotProduct]
@@ -79,9 +77,8 @@ lemma positive_mul_vec_pos [Fintype n]
 
 variable {A : Matrix n n ℝ} --[DecidableEq n] [Nonempty n]
 
-theorem positive_mul_vec_of_nonneg_vec [Fintype n] (hA_pos : ∀ i j, 0 < A i j)
-    {v : n → ℝ} (hv_nonneg : ∀ i, 0 ≤ v i) (hv_ne_zero : v ≠ 0) :
-    ∀ i, 0 < (A *ᵥ v) i := by
+theorem positive_mul_vec_of_nonneg_vec [Fintype n] (hA_pos : ∀ i j, 0 < A i j) {v : n → ℝ}
+    (hv_nonneg : ∀ i, 0 ≤ v i) (hv_ne_zero : v ≠ 0) : ∀ i, 0 < (A *ᵥ v) i := by
   intro i
   simp only [mulVec, dotProduct]
   apply Finset.sum_pos'
@@ -97,21 +94,18 @@ theorem positive_mul_vec_of_nonneg_vec [Fintype n] (hA_pos : ∀ i j, 0 < A i j)
     exact mul_pos (hA_pos i k) hk_pos
 
 lemma path_exists_of_pos_entry {A : Matrix n n ℝ} {i j : n} (h_pos : 0 < A i j) :
-    letI : Quiver n := toQuiver A
-    ∃ p : Quiver.Path i j, 0 < p.length := by
   letI : Quiver n := toQuiver A
-  let e : i ⟶ j := ⟨h_pos⟩
-  refine ⟨e.toPath, ?_⟩
-  simp
+  ∃ p : Quiver.Path i j, 0 < p.length := by
+  letI : Quiver n := toQuiver A
+  refine ⟨(show i ⟶ j from ⟨h_pos⟩).toPath, ?_⟩
+  simp [Quiver.Path.length_toPath]
 
 lemma irreducible_of_all_entries_positive {A : Matrix n n ℝ} (hA : ∀ i j, 0 < A i j) :
-    IsIrreducible A := by
-  letI G := toQuiver A
-  constructor
-  · intros i j
-    exact (hA i j).le
-  · intros i j
-    exact path_exists_of_pos_entry (hA i j)
+  IsIrreducible A := by
+  letI : Quiver n := toQuiver A
+  refine ⟨fun i j => (hA i j).le, ?_⟩
+  intro i j
+  simpa using (path_exists_of_pos_entry (A := A) (i := i) (j := j) (h_pos := hA i j))
 
 theorem exists_connecting_edge_of_irreducible {A : Matrix n n ℝ} (hA_irred : A.IsIrreducible)
     {v : n → ℝ} (hv_nonneg : ∀ i, 0 ≤ v i)
