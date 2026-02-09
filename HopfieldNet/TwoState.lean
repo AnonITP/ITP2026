@@ -4,6 +4,7 @@ import Mathlib.LinearAlgebra.Matrix.Symmetric
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 import HopfieldNet.paramNN
 import PhysLean.Thermodynamics.Temperature.Basic
+--import HopfieldNet.Quiver.NN.Main2
 
 set_option linter.unusedSectionVars false
 set_option linter.unusedSimpArgs false
@@ -160,10 +161,10 @@ open scoped ENNReal NNReal BigOperators
 
 --variable {R U σ : Type}
 --variable {R U σ : Type*}
-universe uR uU uσ
+universe u v u₁ u₂
 
 -- We can also parametrize earlier variables with these universes if desired:
-variable {R : Type uR} {U : Type uU} {σ : Type uσ}
+variable {R : Type u₁} {U : Type u} {σ : Type u₂}
 
 --variable {R U σ : Type}
 
@@ -232,7 +233,7 @@ variable [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 @[inline] def fin0 : Fin 1 := ⟨0, by decide⟩
 
 /-- Standard symmetric Hopfield parameters with activations in {-1,1} (σ = R). -/
-def SymmetricBinary (R : Type uR) (U : Type uU) [Field R] [LinearOrder R]
+def SymmetricBinary (R : Type u₁) (U : Type u) [Field R] [LinearOrder R]
     [DecidableEq U] [Fintype U] [Nonempty U] : NeuralNetwork R U R :=
 { Adj := fun u v => u ≠ v
   Ui := Set.univ
@@ -266,7 +267,7 @@ instance : Fintype Signum where
   complete := by intro x; cases x <;> simp
 
 /-- Symmetric Hopfield parameters with σ = Signum. -/
-def SymmetricSignum (R : Type uR) (U : Type uU) [Field R] [LinearOrder R]
+def SymmetricSignum (R : Type u₁) (U : Type u) [Field R] [LinearOrder R]
     [DecidableEq U] [Fintype U] [Nonempty U] : NeuralNetwork R U Signum :=
 { Adj := fun u v => u ≠ v
   Ui := Set.univ
@@ -287,7 +288,7 @@ def SymmetricSignum (R : Type uR) (U : Type uU) [Field R] [LinearOrder R]
   hpact := by intro; simp }
 
 /-- Zero / one network (σ ∈ {0,1}). -/
-def ZeroOne (R : Type uR) (U : Type uU) [Field R] [LinearOrder R]
+def ZeroOne (R : Type u₁) (U : Type u) [Field R] [LinearOrder R]
     [DecidableEq U] [Fintype U] [Nonempty U] : NeuralNetwork R U R :=
 { (SymmetricBinary R U) with
   pact := fun a => a = 0 ∨ a = 1

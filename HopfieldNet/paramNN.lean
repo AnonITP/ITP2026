@@ -1,4 +1,3 @@
-
 import Mathlib.Combinatorics.Digraph.Basic
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Data.Vector.Basic
@@ -46,8 +45,10 @@ structure NeuralNetwork (R : Type uR) (U : Type uU) (σ : Type uσ) [Zero R] ext
   /-- If all activations satisfy `pact`, then the next activations computed by `fact`
   also satisfy `pact`. -/
   (hpact :
-    ∀ (w : Matrix U U R) (_ : ∀ u v, ¬ Adj u v → w u v = 0) (_ : pw w)
-      (σv : (u : U) → Vector R (κ1 u)) (θ : (u : U) → Vector R (κ2 u))
+    ∀ (w : Matrix U U R)
+      (_ : ∀ u v, ¬ Adj u v → w u v = 0) (_ : pw w)
+      (σv : (u : U) → Vector R (κ1 u))
+      (θ : (u : U) → Vector R (κ2 u))
       (current : U → σ),
       (∀ u_idx : U, pact (current u_idx)) →
       ∀ u_target : U,
