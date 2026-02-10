@@ -1,4 +1,4 @@
-import HopfieldNet.Quiver.NN.NNStochasticQuiv
+import HopfieldNet.Quiver.NN.Stochastic
 import HopfieldNet.Quiver.HN.StochasticAuxQuiv
 import Mathlib.Analysis.RCLike.Basic
 import Mathlib.LinearAlgebra.AffineSpace.AffineMap

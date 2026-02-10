@@ -1,5 +1,6 @@
 import MCMC.Finite.Convergence
 import MCMC.Finite.Core
+import MCMC.Finite.DetailedBalanceGen
 import MCMC.Finite.Gibbs
 import MCMC.Finite.MetropolisHastings
 import MCMC.Finite.TotalVariation

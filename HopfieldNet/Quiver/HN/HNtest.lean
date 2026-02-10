@@ -1,7 +1,7 @@
 import HopfieldNet.Quiver.HN.HNquivHebbian
 
-set_option linter.unusedVariables false
-set_option maxHeartbeats 500000
+-- set_option linter.unusedVariables false
+-- set_option maxHeartbeats 500000
 
 open Mathlib Finset
 
@@ -24,101 +24,6 @@ end HopfieldNetwork
 /-- A 4x4 matrix of rational numbers. --/
 def W1 : Matrix (Fin 4) (Fin 4) ℚ :=
   Matrix.of ![![0,1,-1,-1], ![1,0,-1,-1], ![-1,-1,0,1], ![-1,-1,1,0]]
-
--- /-- We construct the NeuralNetwork instance. Note that we define 'Hom' here
---   to satisfy the Quiver extension. -/
--- def test : NeuralNetwork ℚ (Fin 4) := {
---   -- We define an arrow existing only if the matrix value is non-zero.
---   Hom := fun u v => PLift (W1 u v ≠ 0)
-
---   -- B. Architecture (Sets)
---   Ui := {0,1}
---   Uo := {2,4}
---   Uh := ∅
-
---   -- C. Proofs of Architecture (Same as original)
---   hUi := Ne.symm (Set.ne_insert_of_notMem {1} fun a ↦ a)
---   hUo := Set.singleton_ne_empty 2
---   hU := by
---      ext x
---      simp only [Set.mem_univ, Fin.isValue, Set.union_singleton,
---        Set.union_empty, Set.mem_insert_iff,
---        Set.mem_singleton_iff, true_iff]
---      revert x
---      decide
---   hhio := by
---     simp only [Fin.isValue, Set.union_singleton, Set.empty_inter]
-
---   -- D. Dimensions
---   κ1 := fun _ => 0
---   κ2 := fun _ => 1
-
---   -- E. Computation Functions
---   -- 'fnet' calculates the weighted sum. We access 'test.M' directly here.
---   fnet := fun u preds _ _ => ∑ v, (W1 u v) * preds v
-
---   fact := fun u input θ => if input ≥ θ then 1 else 0
---   fout := fun u act => act
---   -- F. Constraints / Predicates
---   pact := fun _ => True
---   pw := fun _ _ _ => True -- We accept any arrow defined by our Hom
---   hpact := fun _ _ _ _ _ _ _ _ _ => True.intro
---   pwMat := by {
---     intro u v
---     exact (W1 u v ≠ 0)
---   }
---   pm W := True
--- }
-
-
--- /--
--- `HebbianParamsTest` defines a Hopfield Network with 4 neurons and rational weights.
--- - `w`: The weight matrix `W1`.
--- - `hw`: Proof that the weights are symmetric.
--- - `hw'`: Proof that the weights are zero on the diagonal.
--- - `σ`: Always an empty vector.
--- - `θ`: Always returns a list with a single 0.
--- --/
--- def wθ : Params test where
---   h_arrows := fun _ _ _ => True.intro
---   w := W1
---   θ u := ⟨#[0], by
---     simp only [List.size_toArray, List.length_cons, List.length_nil, zero_add]
---     unfold test
---     simp only⟩
---   σ := fun _ => Vector.emptyWithCapacity 0
---   hw := fun u v h_no_arrow => by
---     unfold test at h_no_arrow
---     simp only [ne_eq, Decidable.not_not] at h_no_arrow
---     exact h_no_arrow
---   hw' := by simp only [test]
-
--- /-- `extu` is the initial state for our `HebbianParamsTest` Hopfield network.
--- - `act`: `[1, -1, -1, 1]` - initial activations.
---
--- This initializes the state for a Hopfield network test.
--- -/
--- def extu : State' HebbianParamsTest where
---   act := ![1,-1,-1,1]
---   hp := by
---     intros u
---     unfold HopfieldNetwork
---     simp only
---     revert u
---     decide
-
--- instance : Repr (HopfieldNetwork ℚ (Fin 4)).State where
---   reprPrec state _ := ("acts: " ++ repr (state.act))
-
--- Computations
-
--- lemma zero_if_not_mem_Ui' : ∀ u : Fin 4,
---     ¬ u ∈ ({0,1,2,3} : Finset (Fin 4)) → extu.act u = 0 := by {decide}
-
--- def HN.hext : extu.onlyUi := by {intros u; tauto}
-
--- #eval NeuralNetwork.State.workPhase HebbianParamsTest extu HN.hext [2,0,1,2,0,1,2]
-
 
 /--
 `pattern_ofVec` converts a pattern vector from `Fin n` to `ℚ` into a `State`
@@ -156,7 +61,7 @@ Converts a matrix of patterns `V` into Hopfield network states.
 Each row of `V` (a function `Fin m → Fin n → ℚ`) is mapped to a Hopfield network state
 if all elements are either `1` or `-1`. Returns `some` mapping if successful, otherwise `none`.
 -/
-def patternsOfVecs (V : Fin m → Fin n → ℚ) [NeZero n] (hmn : m < n) :
+def patternsOfVecs (V : Fin m → Fin n → ℚ) [NeZero n] (_ : m < n) :
   Option (Fin m → (HopfieldNetwork ℚ (Fin n)).State) :=
   obviousFunction (fun i => pattern_ofVec (V i))
 

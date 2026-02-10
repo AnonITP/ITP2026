@@ -2,7 +2,7 @@ import Mathlib.Algebra.EuclideanDomain.Field
 import Mathlib.Analysis.Complex.Exponential
 import Mathlib.LinearAlgebra.Matrix.Symmetric
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
-import HopfieldNet.Quiver.NN.ParamNN
+import HopfieldNet.Quiver.NN.Main
 import PhysLean.Thermodynamics.Temperature.Basic
 --import HopfieldNet.Quiver.NN.Main2
 
@@ -253,7 +253,7 @@ def SymmetricBinary (R : Type u₁) (U : Type u) [Field R] [LinearOrder R]
   m := id
   hpact := by
     classical
-    intro W _ _ _ σ θ cur hcur u
+    intro _ W _ _ _ σ θ cur hcur u
     by_cases hth :
         (θ u).get fin0 ≤ ∑ v, if v ≠ u then W u v * cur v else 0
     · grind
@@ -296,7 +296,7 @@ def ZeroOne (R : Type u₁) (U : Type u) [Field R] [LinearOrder R]
   pact := fun a => a = 0 ∨ a = 1
   fact := fun _ _ net θ => if θ.get fin0 ≤ net then 1 else 0
   hpact := by
-    intro W _ _ _ σ θ cur hcur u
+    intro _ W _ _ _ σ θ cur hcur u
     by_cases hth :
         (θ u).get fin0 ≤ ∑ v, if v ≠ u then W u v * cur v else 0
     · grind
@@ -797,17 +797,19 @@ lemma Up_eq_updPos_or_updNeg
         TwoStateNeuralNetwork.h_fact_pos (NN:=NN) v (s.act v) net (p.θ v) hθle
       have : NN.fact v (s.act v)
           (NN.fnet v (p.w v) (fun w => s.out w) (p.σ v))
-          (p.θ v) = TwoStateNeuralNetwork.σ_pos (NN:=NN) := by stop
+          (p.θ v) = TwoStateNeuralNetwork.σ_pos (NN:=NN) := by
         simpa [NeuralNetwork.State.net] using hpos
       simp [updPos, Function.update, this, hθle]
+      grind
     · have hlt : net < θ := lt_of_not_ge hθle
       have hneg :=
         TwoStateNeuralNetwork.h_fact_neg (NN:=NN) v (s.act v) net (p.θ v) hlt
       have : NN.fact v (s.act v)
           (NN.fnet v (p.w v) (fun w => s.out w) (p.σ v))
-          (p.θ v) = TwoStateNeuralNetwork.σ_neg (NN:=NN) := by stop
+          (p.θ v) = TwoStateNeuralNetwork.σ_neg (NN:=NN) := by
         simpa [NeuralNetwork.State.net] using hneg
       simp [updNeg, Function.update, this, hθle]
+      grind
   · unfold NeuralNetwork.State.Up
     simp_rw [hv, updPos, updNeg]; simp [Function.update]
     aesop
@@ -1062,7 +1064,7 @@ lemma energy_is_lyapunov_at_site''
     (p : Params NN) (s : NN.State) (u : U)
     (hcur : s.act u = TwoStateNeuralNetwork.σ_pos (NN := NN) ∨
             s.act u = TwoStateNeuralNetwork.σ_neg (NN := NN)) :
-    spec.E p (NeuralNetwork.State.Up s p u) ≤ spec.E p s := by
+    spec.E p (NeuralNetwork.State.Up p s u) ≤ spec.E p s := by
   set sPos := updPos (NN:=NN) s u
   set sNeg := updNeg (NN:=NN) s u
   set net  := s.net p u
@@ -1132,7 +1134,7 @@ lemma energy_is_lyapunov_at_site'''
     (p : Params NN) (s : NN.State) (u : U)
     (hcur : s.act u = TwoStateNeuralNetwork.σ_pos (NN := NN) ∨
             s.act u = TwoStateNeuralNetwork.σ_neg (NN := NN)) :
-    spec.E p (NeuralNetwork.State.Up s p u) ≤ spec.E p s :=
+    spec.E p (NeuralNetwork.State.Up p s u) ≤ spec.E p s :=
   energy_is_lyapunov_at_site (NN:=NN) (spec:=spec) p s u hcur
 
 end EnergySpec'

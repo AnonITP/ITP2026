@@ -47,7 +47,7 @@ def Hebbian {m : ℕ} (ps : Fin m → (HopfieldNetwork R U).State) : Params (Hop
     refine IsSymm.ext_iff.mpr (fun i j => CommMonoid.mul_comm ((ps k).act j) ((ps k).act i))
 
 
-lemma patterns_pairwise_orthogonal (ps : Fin m → (HopfieldNetwork R U).State)
+lemma patterns_pairwise_orthogonal {m : ℕ}  (ps : Fin m → (HopfieldNetwork R U).State)
   (horth : ∀ {i j : Fin m} (_ : i ≠ j), dotProduct (ps i).act (ps j).act = 0) :
   ∀ (j : Fin m), ((Hebbian ps).w).mulVec (ps j).act = (card U - m) * (ps j).act := by
   intros k
@@ -89,7 +89,7 @@ lemma patterns_pairwise_orthogonal (ps : Fin m → (HopfieldNetwork R U).State)
     simp only [one_apply, ite_mul, one_mul, zero_mul, Finset.sum_ite_eq, mem_univ, reduceIte]
     exact (sub_mul (card U : R) m ((ps k).act t)).symm
 
-lemma stateisStablecondition (ps : Fin m → (HopfieldNetwork R U).State)
+lemma stateisStablecondition {m : ℕ} (ps : Fin m → (HopfieldNetwork R U).State)
   (s : (HopfieldNetwork R U).State) c (hc : 0 < c)
   (hw : ∀ u, ((Hebbian ps).w).mulVec s.act u = c * s.act u) : s.isStable (Hebbian ps) := by
   intros u
@@ -114,7 +114,7 @@ lemma stateisStablecondition (ps : Fin m → (HopfieldNetwork R U).State)
     · rfl
   exact (Hebbian ps).hw u u fun a => by simp at a
 
-lemma hebbian_stable_orthogonal (hm : m < card U) (ps : Fin m → (HopfieldNetwork R U).State)
+lemma hebbian_stable_orthogonal {m : ℕ} (hm : m < card U) (ps : Fin m → (HopfieldNetwork R U).State)
     (j : Fin m) (horth : ∀ {i j : Fin m} (_ : i ≠ j), dotProduct (ps i).act (ps j).act = 0):
   isStable (Hebbian ps) (ps j) := by
   unfold isStable
@@ -129,16 +129,16 @@ lemma dotProduct_act_self (s : (HopfieldNetwork R U).State) : dotProduct s.act s
   simp [dotProduct, hsq, sum_const, card_univ, nsmul_eq_mul]
 
 /-- Disturbance term for non-orthogonal patterns. -/
-def disturbanceTerm (ps : Fin m → (HopfieldNetwork R U).State) (j : Fin m) : U → R :=
+def disturbanceTerm {m : ℕ}  (ps : Fin m → (HopfieldNetwork R U).State) (j : Fin m) : U → R :=
   fun u ↦ ∑ i : Fin m, if i ≠ j then (ps i).act u * dotProduct (ps i).act (ps j).act else 0
 
 /-- Full perturbed Hopfield update -/
-def perturbedHopfieldUpdate (ps : Fin m → (HopfieldNetwork R U).State) (j : Fin m) : U → R :=
+def perturbedHopfieldUpdate {m : ℕ} (ps : Fin m → (HopfieldNetwork R U).State) (j : Fin m) : U → R :=
   fun u ↦ (card U - m : R) * (ps j).act u + disturbanceTerm ps j u
 
 /- The outer-product sum gives `∑ i, (ps i).act t * dotProduct (ps i).act pj`. -/
 set_option maxHeartbeats 2000000 in
-theorem outerProduct_sum_mulVec_apply(ps : Fin m → (HopfieldNetwork R U).State) (t : U) (pj : U → R) :
+theorem outerProduct_sum_mulVec_apply {m : ℕ} (ps : Fin m → (HopfieldNetwork R U).State) (t : U) (pj : U → R) :
     ((∑ i, outerProduct (ps i) (ps i)) *ᵥ pj) t = ∑ i, (ps i).act t * (ps i).act ⬝ᵥ pj := by
   --rw [mulVec, Finset.sum_apply]
   simp [mulVec, dotProduct]
@@ -158,7 +158,7 @@ theorem outerProduct_sum_mulVec_apply(ps : Fin m → (HopfieldNetwork R U).State
     simpa [dotProduct, mul_assoc] using (mul_sum (s := (Finset.univ : Finset U))
       (f := fun x : U ↦ (ps i).act x * pj x) (a := (ps i).act t)).symm
 
-theorem hebbian_mulVec_apply (ps : Fin m → (HopfieldNetwork R U).State) (t : U) (pj : U → R) :
+theorem hebbian_mulVec_apply {m : ℕ} (ps : Fin m → (HopfieldNetwork R U).State) (t : U) (pj : U → R) :
       ((Hebbian ps).w).mulVec pj t = ∑ i, (ps i).act t * (ps i).act ⬝ᵥ pj - ↑m * pj t := by
   unfold Hebbian
   have hsub : ((∑ i : Fin m, outerProduct (ps i) (ps i) - (m : R) • (1 : Matrix U U R)).mulVec pj) =
@@ -188,7 +188,7 @@ activity vector of the `j`-th pattern yields:
 In particular, when the patterns are pairwise orthogonal, the disturbance term vanishes and
 the field reduces to the pure signal term.
 -/
-lemma hebbian_mulVec_act_eq_signal_add_disturbance (ps : Fin m → (HopfieldNetwork R U).State) (j : Fin m) :
+lemma hebbian_mulVec_act_eq_signal_add_disturbance {m : ℕ} (ps : Fin m → (HopfieldNetwork R U).State) (j : Fin m) :
   ((Hebbian ps).w).mulVec (ps j).act = (card U - m : R) • (ps j).act + disturbanceTerm ps j := by
   ext t
   let pj : U → R := (ps j).act

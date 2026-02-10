@@ -1,4 +1,4 @@
-import HopfieldNet.Quiver.NN.ParamNN
+import HopfieldNet.Quiver.NN.Main
 
 open Mathlib Finset BigOperators
 
@@ -28,21 +28,14 @@ def test : NeuralNetwork ℚ (Fin 3) ℤ := {
      decide
   hhio := by
     simp only [Fin.isValue, Set.union_singleton, Set.empty_inter]
-
-  -- D. Dimensions
   κ1 := fun _ => 0
   κ2 := fun _ => 1
-
-  -- E. Computation Functions
-  -- 'fnet' calculates the weighted sum. We access 'test.M' directly here.
-  fnet := fun u preds _ _ => ∑ v, (test.M u v) * preds v
-
-  fact := fun u input θ => if input ≥ θ then 1 else 0
+  fnet u w pred σ := ∑ v, w v * pred v
+  fact u _ input θ := if input ≥ θ.get 0 then 1 else 0
   fout := fun u act => act
-  -- F. Constraints / Predicates
   pact := fun _ => True
   pw := fun _ _ _ => True -- We accept any arrow defined by our Hom
-  hpact := fun _ _ _ _ _ _ _ _ _ => True.intro
+  hpact w _ _ _ σ θ _ pact u := pact u
   pwMat := by {
     intro u v
     exact (test.M u v ≠ 0)
@@ -89,8 +82,51 @@ lemma test.onlyUi : test.extu.onlyUi := by {
   exact not_or.mp hu
 }
 
-/- Workphase: u3, u1, u2, u3, u1, u2, u3 -/
-#eval NeuralNetwork.State.workPhase wθ test.extu test.onlyUi [2,0,1,2,0,1,2]
+-- Show the state after *each* asynchronous neuron update (not only the final state).
 
-/- Workphase: u3, u2, u1, u3, u2, u1, u3 -/
-#eval NeuralNetwork.State.workPhase wθ test.extu test.onlyUi [2,1,0,2,1,0,2]
+def test.seq : List (Fin 3) := [2,0,1,2,0,1,2]
+
+/-- States after running `workPhase` on every prefix of `test.seq`.
+Includes the initial state as the first element (empty prefix). -/
+def test.workPhaseTrace : List test.State :=
+  (test.seq.inits).map (fun pref =>
+    NeuralNetwork.State.workPhase wθ test.extu test.onlyUi pref
+  )
+
+-- All intermediate states (including the initial one at the start)
+--#eval test.workPhaseTrace
+
+/-- Same trace, but labeled by the neuron updated at each step. -/
+def test.workPhaseTraceLabeled : List ((Fin 3) × test.State) :=
+  List.zip test.seq (test.workPhaseTrace.drop 1)
+
+-- Each step: (neuron updated, resulting state)
+#eval test.workPhaseTraceLabeled
+
+-- The workphase for the asynchronous update of the sequence of neurons u3 , u2 , u1 , u3 , u2 , u1 , u3 ,
+
+def test.seq' : List (Fin 3) := [2,1,0,2,1,0,2]
+
+/-- States after running `workPhase` on every prefix of `test.seq'`.
+Includes the initial state as the first element (empty prefix). -/
+def test.workPhaseTrace' : List test.State :=
+  (test.seq'.inits).map (fun pref =>
+    NeuralNetwork.State.workPhase wθ test.extu test.onlyUi pref
+  )
+
+--#eval test.workPhaseTrace'
+
+/-- Same trace, but labeled by the neuron updated at each step. -/
+def test.workPhaseTraceLabeled' : List ((Fin 3) × test.State) :=
+  List.zip test.seq' (test.workPhaseTrace'.drop 1)
+
+#eval test.workPhaseTraceLabeled'
+
+-- Final state (same as last element of the trace)
+--#eval NeuralNetwork.State.workPhase wθ test.extu test.onlyUi test.seq'
+
+-- /- Workphase: u3, u1, u2, u3, u1, u2, u3 -/
+-- #eval NeuralNetwork.State.workPhase wθ test.extu test.onlyUi [2,0,1,2,0,1,2]
+
+-- /- Workphase: u3, u2, u1, u3, u2, u1, u3 -/
+-- #eval NeuralNetwork.State.workPhase wθ test.extu test.onlyUi [2,1,0,2,1,0,2]

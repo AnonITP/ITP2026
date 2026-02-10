@@ -121,7 +121,7 @@ def test.workPhaseTraceLabeled' : List ((Fin 3) × test.State) :=
 #eval test.workPhaseTraceLabeled'
 
 -- Final state (same as last element of the trace)
-#eval NeuralNetwork.State.workPhase wθ test.extu test.onlyUi test.seq'
+--#eval NeuralNetwork.State.workPhase wθ test.extu test.onlyUi test.seq'
 
 -- /- Workphase: u3, u1, u2, u3, u1, u2, u3 -/
 -- #eval NeuralNetwork.State.workPhase wθ test.extu test.onlyUi [2,0,1,2,0,1,2]

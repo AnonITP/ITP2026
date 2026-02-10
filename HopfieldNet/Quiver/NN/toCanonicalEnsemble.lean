@@ -43,7 +43,7 @@ class IsHamiltonian (NN : NeuralNetwork ℝ U σ) [MeasurableSpace NN.State] [De
   Glauber dynamics. Any single update step does not increase the energy. -/
   energy_is_lyapunov :
     ∀ (p : Params NN) (s : NN.State) (u : U),
-      energy p ((NeuralNetwork.State.Up s p u)) ≤ energy p s
+      energy p ((NeuralNetwork.State.Up p s u)) ≤ energy p s
 
 /--
 A formal constructor that lifts any `NeuralNetwork` proven to be `IsHamiltonian`

@@ -55,7 +55,7 @@ It extends `HopfieldNetwork` with specific properties:
 - Activation is binary (1 or -1).
 -/
 abbrev BoltzmannMachine (R U : Type) [Field R] [LinearOrder R] [IsStrictOrderedRing R] [DecidableEq U]
-  [Nonempty U] [Fintype U] : NeuralNetwork R U :=
+  [Nonempty U] [Fintype U] : NeuralNetwork R U R :=
 { (HopfieldNetwork R U) with
   --Adj := fun u v => u ≠ v,
   Ui := Set.univ, Uo := Set.univ, Uh := ∅,
@@ -65,7 +65,7 @@ abbrev BoltzmannMachine (R U : Type) [Field R] [LinearOrder R] [IsStrictOrderedR
   pw _ _ _:= True
   κ1 := fun _ => 0, κ2 := fun _ => 1,
   fnet := fun u w_u pred _ => HNfnet u w_u pred,
-  fact := fun u (net_input_val : R) (θ_vec : Vector R 1) =>
+  fact := fun u (net_input_val : R) _ (θ_vec : Vector R 1) =>
      HNfact (θ_vec.get 0) net_input_val,
   fout := fun _ act => act,
   pact := fun act => act = (1 : R) ∨ act = (-1 : R), -- This is the pact for BoltzmannMachine

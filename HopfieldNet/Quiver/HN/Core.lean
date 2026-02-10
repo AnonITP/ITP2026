@@ -40,9 +40,10 @@ abbrev HNfout (act : R) : R := act
 
 - `R`: A linear ordered field.
 - `U`: A finite, nonempty set of neurons with decidable equality.
+- `σ`: A type parameter for the neural network.
 -/
 abbrev HopfieldNetwork (R U : Type) [Field R] [LinearOrder R] [IsStrictOrderedRing R] [DecidableEq U]
-   [Nonempty U] [Fintype U] : NeuralNetwork R U where
+   [Nonempty U] [Fintype U] : NeuralNetwork R U R where
   /- The adjacency relation between neurons `u` and `v`, defined as `u ≠ v`. -/
   Hom u v := PLift (u ≠ v)
   /- The set of input neurons, defined as the universal set. -/
@@ -68,7 +69,7 @@ abbrev HopfieldNetwork (R U : Type) [Field R] [LinearOrder R] [IsStrictOrderedRi
   /- The network function for neuron `u`, given weights `w` and predecessor states `pred`. -/
   fnet u w pred _ := HNfnet u w pred
   /- The activation function for neuron `u`, given input and threshold `θ`. -/
-  fact u net_input_val θ_vec := HNfact (θ_vec.get 0) net_input_val
+  fact u _  net_input_val θ_vec := HNfact (θ_vec.get 0) net_input_val
   -- Ignoring the current_act_val argument
   /- The output function, given the activation state `act`. -/
   fout _ act := HNfout act
@@ -85,6 +86,7 @@ abbrev HopfieldNetwork (R U : Type) [Field R] [LinearOrder R] [IsStrictOrderedRi
 
   pm : Matrix U U R → Prop := Matrix.IsSymm
      --((θ u).get 0 ≤ HNfnet u (w u) fun v => HNfout (act v)) 1 (-1)
+  m act := act
 
 variable [Nonempty U]
 

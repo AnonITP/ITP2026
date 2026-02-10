@@ -4,46 +4,41 @@ import Mathlib.Analysis.Normed.Field.Lemmas
 import Mathlib.LinearAlgebra.Matrix.Defs
 import Mathlib.Data.List.Pairwise
 
-open Mathlib
+open Finset Mathlib
 
-universe u v
+universe uR uU uσ v
 
-structure NeuralNetwork (R U : Type u) [Zero R] extends Quiver.{v,u} U where
+structure NeuralNetwork (R : Type uR) (U : Type uU) (σ : Type uσ) [Zero R] extends Quiver.{v, uU} U where
   (Ui Uo Uh : Set U)
+  -- ... (Set constraints hUi, hUo, hU, hhio) ...
   (hUi : Ui ≠ ∅)
   (hUo : Uo ≠ ∅)
   (hU : Set.univ = (Ui ∪ Uo ∪ Uh))
   (hhio : Uh ∩ (Ui ∪ Uo) = ∅)
   (κ1 κ2 : U → ℕ)
   (fnet : ∀ u : U, (U → R) → (U → R) → Vector R (κ1 u) → R)
-    /-- Computes the activation of a node. -/
-  (fact : ∀ u : U, R → Vector R (κ2 u) → R)
-  (fout : ∀ _ : U, R → R)
-  (pact : R → Prop)
+  (fact : ∀ u : U, σ → R → Vector R (κ2 u) → σ)
+  (fout : ∀ _ : U, σ → R)
+  (pact : σ → Prop)
   (pw : ∀ (u v : U), (u ⟶ v) → Prop)
-  -- /-- The adjacency matrix induced by `pw`: entry `(u,v)` holds iff there exists an arrow `u ⟶ v`
-  -- satisfying `pw`. -/
+  (m : σ → R)
   (pwMat : Matrix U U Prop := fun u v => ∃ f : (u ⟶ v), pw u v f)
-  /-- NEW: Predicate on Matrix: Defines valid weights (e.g., "weights must be between -1 and 1"). -/
   (pm : Matrix U U R → Prop)
-    /-- If all activations satisfy `pact`, then the activations computed by `fact` also satisfy `pact`. -/
   (hpact : ∀ (w : Matrix U U R) (_ : ∀ (u v : U), ¬pwMat u v → w u v = 0)
-   (_ : ∀ u v (f : Hom u v), pw u v f)
-   (_ : pm w)
-   (σ : (u : U) → Vector R (κ1 u))
-   (θ : (u : U) → Vector R (κ2 u))
-   (act : U → R),
-  (∀ u : U, pact (act u)) → (∀ u : U, pact (fact u (fnet u (w u)
-    (fun v => fout v (act v)) (σ u)) (θ u))))
+    (_ : ∀ u v (f : Hom u v), pw u v f) (_ : pm w) (σ₁ : (u : U) → Vector R (κ1 u))
+    (θ : (u : U) → Vector R (κ2 u)) (act : U → σ),
+    (∀ u : U, pact (act u)) → (∀ u : U, pact (fact u v (fnet u (w u)
+    (fun v => fout v (act v)) (σ₁ u)) (θ u))))
 
-variable {R U : Type} [Zero R]
+
+variable {R U σ : Type} [Zero R]
 
 /--
 `Params` is a structure that holds the external parameters for a given
 neural network `NN`, along with a proof that the network's internal
 parameters (its arrows) satisfy the required predicate `NN.pw`.
 -/
-structure Params (NN : NeuralNetwork R U) where
+structure Params (NN : NeuralNetwork R U σ) where
   /-- A proof that all arrows in the neural network satisfy its parameter predicate `pw`. -/
   (h_arrows : ∀ u v (f : NN.Hom u v), NN.pw u v f)
   (w : Matrix U U R)
@@ -59,13 +54,13 @@ structure Params (NN : NeuralNetwork R U) where
 
 namespace NeuralNetwork
 
-structure State (NN : NeuralNetwork R U) where
-  act : U → R
+structure State (NN : NeuralNetwork R U σ) where
+  act : U → σ
   hp : ∀ u : U, NN.pact (act u)
 
 /-- Extensionality lemma for neural network states -/
 @[ext]
-lemma ext {R U : Type} [Zero R] {NN : NeuralNetwork R U}
+lemma ext {R U σ : Type} [Zero R] {NN : NeuralNetwork R U σ}
     {s₁ s₂ : NN.State} : (∀ u, s₁.act u = s₂.act u) → s₁ = s₂ := by
   intro h
   cases s₁
@@ -76,16 +71,16 @@ lemma ext {R U : Type} [Zero R] {NN : NeuralNetwork R U}
 
 namespace State
 
-variable {NN : NeuralNetwork R U} (wσθ : Params NN) (s : NN.State)
+variable {NN : NeuralNetwork R U σ} (wσθ : Params NN) (s : NN.State)
 
 def out (u : U) : R := NN.fout u (s.act u)
 def net (u : U) : R := NN.fnet u (wσθ.w u) (fun v => s.out v) (wσθ.σ u)
-def onlyUi : Prop := ∀ u : U, ¬ u ∈ NN.Ui → s.act u = 0
+def onlyUi : Prop := ∃ σ0 : σ, ∀ u : U, u ∉ NN.Ui → s.act u = σ0
 
 variable [DecidableEq U]
 
 def Up (u : U) : NeuralNetwork.State NN :=
-  { act := fun v => if v = u then NN.fact u (s.net wσθ u) (wσθ.θ u) else s.act v, hp := by
+  { act := fun v => if v = u then NN.fact u (s.act u) (s.net wσθ u) (wσθ.θ u) else s.act v, hp := by
       intro v
       split
       · apply NN.hpact
@@ -99,12 +94,9 @@ def Up (u : U) : NeuralNetwork.State NN :=
 def workPhase (extu : NN.State) (_ : extu.onlyUi) (uOrder : List U) : NN.State :=
   uOrder.foldl (fun s_iter u_iter => s_iter.Up wσθ u_iter) extu
 
-/-- `seqStates` generates a sequence of patterns for the neural network.
-- For `n = 0`, it returns the initial pattern `s`.
-- For `n > 0`, it updates the pattern at `n - 1` using the node from `useq` at `n - 1`. -/
 def seqStates (useq : ℕ → U) : ℕ → NeuralNetwork.State NN
   | 0 => s
-  | n + 1 => .Up wσθ (seqStates useq n) (useq n)
+  | n + 1 => (seqStates useq n).Up wσθ (useq n)
 
 def isStable : Prop :=  ∀ (u : U), (s.Up wσθ u).act u = s.act u
 
