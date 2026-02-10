@@ -24,6 +24,9 @@ lean_lib «NeuralNetwork» where
 -- lean_lib GibbsMeasure where
 --   -- Builds the `GibbsMeasure.*` modules living under the top-level `GibbsMeasure/` directory.
 
+lean_lib ThreeD where
+  -- Builds the `GibbsMeasure.*` modules living under the top-level `GibbsMeasure/` directory.
+
 --lean_lib Optlib where
 
 lean_lib PhysLean where

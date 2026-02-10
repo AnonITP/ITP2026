@@ -1,5 +1,5 @@
 import Mathlib.Analysis.SpecialFunctions.Exp
-import HopfieldNet.Quiver.NN.ParamNN
+import HopfieldNet.Quiver.NN.Main
 
 namespace Sequential
 
