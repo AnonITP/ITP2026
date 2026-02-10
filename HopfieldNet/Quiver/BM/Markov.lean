@@ -1,5 +1,5 @@
 import HopfieldNet.Quiver.BM.CoreQuiv
-import HopfieldNet.Quiver.NN.MarkovQuiv
+import HopfieldNet.Quiver.HN.MarkovQuiv
 
 open Finset Matrix NeuralNetwork State ENNReal Real
 open PMF MeasureTheory ProbabilityTheory.Kernel Set
