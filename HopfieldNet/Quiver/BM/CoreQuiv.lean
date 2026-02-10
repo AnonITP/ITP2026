@@ -65,8 +65,9 @@ abbrev BoltzmannMachine (R U : Type) [Field R] [LinearOrder R] [IsStrictOrderedR
   pw _ _ _:= True
   κ1 := fun _ => 0, κ2 := fun _ => 1,
   fnet := fun u w_u pred _ => HNfnet u w_u pred,
-  fact := fun u (_current_act_val : R) (net_input_val : R) (θ_vec : Vector R 1) =>
-     HNfact (θ_vec.get 0) net_input_val,  fout := fun _ act => act,
+  fact := fun u (net_input_val : R) (θ_vec : Vector R 1) =>
+     HNfact (θ_vec.get 0) net_input_val,
+  fout := fun _ act => act,
   pact := fun act => act = (1 : R) ∨ act = (-1 : R), -- This is the pact for BoltzmannMachine
   pm := Matrix.IsSymm
   hpact := fun _ _ _ _ _ _ _ _ _ => BM_pact_of_HNfact _ _

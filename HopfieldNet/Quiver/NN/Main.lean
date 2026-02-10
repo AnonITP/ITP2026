@@ -16,7 +16,8 @@ structure NeuralNetwork (R U : Type u) [Zero R] extends Quiver.{v,u} U where
   (hhio : Uh ∩ (Ui ∪ Uo) = ∅)
   (κ1 κ2 : U → ℕ)
   (fnet : ∀ u : U, (U → R) → (U → R) → Vector R (κ1 u) → R)
-  (fact : ∀ u : U, R → R → Vector R (κ2 u) → R)
+    /-- Computes the activation of a node. -/
+  (fact : ∀ u : U, R → Vector R (κ2 u) → R)
   (fout : ∀ _ : U, R → R)
   (pact : R → Prop)
   (pw : ∀ (u v : U), (u ⟶ v) → Prop)
@@ -25,21 +26,15 @@ structure NeuralNetwork (R U : Type u) [Zero R] extends Quiver.{v,u} U where
   (pwMat : Matrix U U Prop := fun u v => ∃ f : (u ⟶ v), pw u v f)
   /-- NEW: Predicate on Matrix: Defines valid weights (e.g., "weights must be between -1 and 1"). -/
   (pm : Matrix U U R → Prop)
-  (hpact : ∀
-
-  (w : Matrix U U R)
-  (_ : ∀ (u v : U), ¬pwMat u v → w u v = 0)
-  (_ : ∀ u v (f : Hom u v), pw u v f)
-  (_ : pm w)
-
-  (σ : (u : U) → Vector R (κ1 u))
-  (θ : (u : U) → Vector R (κ2 u))
-
-  (current_neuron_activations : U → R),
-  (∀ u_idx : U, pact (current_neuron_activations u_idx)) → -- Precondition on all current activations
-  (∀ u_target : U, pact (fact u_target (current_neuron_activations u_target) -- Pass current_act of target neuron
-                               (fnet u_target (w u_target) (fun v => fout v (current_neuron_activations v)) (σ u_target))
-                               (θ u_target))))
+    /-- If all activations satisfy `pact`, then the activations computed by `fact` also satisfy `pact`. -/
+  (hpact : ∀ (w : Matrix U U R) (_ : ∀ (u v : U), ¬pwMat u v → w u v = 0)
+   (_ : ∀ u v (f : Hom u v), pw u v f)
+   (_ : pm w)
+   (σ : (u : U) → Vector R (κ1 u))
+   (θ : (u : U) → Vector R (κ2 u))
+   (act : U → R),
+  (∀ u : U, pact (act u)) → (∀ u : U, pact (fact u (fnet u (w u)
+    (fun v => fout v (act v)) (σ u)) (θ u))))
 
 variable {R U : Type} [Zero R]
 
@@ -89,32 +84,27 @@ def onlyUi : Prop := ∀ u : U, ¬ u ∈ NN.Ui → s.act u = 0
 
 variable [DecidableEq U]
 
-def Up {NN_local : NeuralNetwork R U} (s : NN_local.State) (wσθ : Params NN_local) (u_upd : U) :
-    NN_local.State :=
-  { act := fun v => if v = u_upd then
-                      NN_local.fact u_upd (s.act u_upd)
-                        (NN_local.fnet u_upd (wσθ.w u_upd) (fun n => s.out n) (wσθ.σ u_upd))
-                        (wσθ.θ u_upd)
-                    else
-                      s.act v,
-    hp := by
-      intro v_target
-      rw [ite_eq_dite]
-      split_ifs with h_eq_upd_neuron
-      · apply NN_local.hpact
-        exact wσθ.hw
+def Up (u : U) : NeuralNetwork.State NN :=
+  { act := fun v => if v = u then NN.fact u (s.net wσθ u) (wσθ.θ u) else s.act v, hp := by
+      intro v
+      split
+      · apply NN.hpact
+        intros u' v' hu'v'
+        exact wσθ.hw u' v' hu'v'
         exact wσθ.h_arrows
         exact wσθ.hw'
-        · exact s.hp
-      · exact s.hp v_target
-  }
+        exact fun u ↦ s.hp u
+      · apply s.hp}
 
 def workPhase (extu : NN.State) (_ : extu.onlyUi) (uOrder : List U) : NN.State :=
   uOrder.foldl (fun s_iter u_iter => s_iter.Up wσθ u_iter) extu
 
+/-- `seqStates` generates a sequence of patterns for the neural network.
+- For `n = 0`, it returns the initial pattern `s`.
+- For `n > 0`, it updates the pattern at `n - 1` using the node from `useq` at `n - 1`. -/
 def seqStates (useq : ℕ → U) : ℕ → NeuralNetwork.State NN
   | 0 => s
-  | n + 1 => .Up (seqStates useq n) wσθ (useq n)
+  | n + 1 => .Up wσθ (seqStates useq n) (useq n)
 
 def isStable : Prop :=  ∀ (u : U), (s.Up wσθ u).act u = s.act u
 

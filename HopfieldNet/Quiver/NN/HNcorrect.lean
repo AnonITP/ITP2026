@@ -1,17 +1,25 @@
+/-
+Copyright (c) 2024 Michail Karatarakis. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Michail Karatarakis
+-/
 import Mathlib.LinearAlgebra.Matrix.Symmetric
 import Mathlib.Data.Matrix.Reflection
 import Mathlib.Data.Vector.Defs
 import Init.Data.Vector.Lemmas
-import HopfieldNet.Digraph.NN.Core
-import HopfieldNet.aux
-import Mathlib.Tactic
+import HopfieldNet.Quiver.NN.NNcorrect
+import HopfieldNet.Quiver.NN.NNaux
 
-open Finset Matrix NeuralNetwork State
+open Finset Matrix NeuralNetwork Pattern
 
 variable {R U : Type} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [DecidableEq U] [Fintype U]
 
 /--
 `HNfnet` computes the weighted sum of predictions for all elements in `U`, excluding `u`.
+
+- `u`: The element to exclude.
+- `wu`: A function giving weights for each element in `U`.
+- `pred`: A function giving prediction values for each element in `U`.
 -/
 abbrev HNfnet (u : U) (wu : U → R) (pred : U → R) : R := ∑ v ∈ {v | v ≠ u}, wu v * pred v
 
@@ -54,7 +62,7 @@ abbrev HopfieldNetwork (R U : Type) [Field R] [LinearOrder R] [IsStrictOrderedRi
   /- The set of hidden neurons, defined as the empty set. -/
   Uh := ∅
   /- A proof that all neurons are in the universal set. -/
-  hU := by simp only [Set.union_self, Set.union_empty]
+  hU := by simp only [Set.mem_univ, Set.union_self, Set.union_empty]
   /- A proof that the input set is not equal to the empty set. -/
   hUi := Ne.symm Set.empty_ne_univ
   /- A proof that the output set is not equal to the empty set. -/
@@ -68,7 +76,7 @@ abbrev HopfieldNetwork (R U : Type) [Field R] [LinearOrder R] [IsStrictOrderedRi
   /- The network function for neuron `u`, given weights `w` and predecessor states `pred`. -/
   fnet u w pred _ := HNfnet u w pred
   /- The activation function for neuron `u`, given input and threshold `θ`. -/
-  fact u _ net_input_val θ_vec := HNfact (θ_vec.get 0) net_input_val -- Ignoring the current_act_val argument
+  fact u input θ := HNfact (θ.get 0) input
   /- The output function, given the activation state `act`. -/
   fout _ act := HNfout act
   /- A predicate that the activation state `act` is either 1 or -1. -/
@@ -82,31 +90,8 @@ abbrev HopfieldNetwork (R U : Type) [Field R] [LinearOrder R] [IsStrictOrderedRi
 variable [Nonempty U]
 
 /--
-In a Hopfield network, two neurons are adjacent if and only if they are different.
-This formalizes the fully connected nature of Hopfield networks.
--/
-lemma HopfieldNetwork.all_nodes_adjacent (u v : U) :
-    ¬(HopfieldNetwork R U).Adj u v → u = v := by
-  intro h
-  unfold HopfieldNetwork at h
-  simp only [ne_eq] at h
-  simp_all only [Decidable.not_not]
-
-/-- In a Hopfield network, activation values can only be 1 or -1. -/
-lemma hopfield_value_dichotomy (val : R) (hval : (HopfieldNetwork R U).pact val) :
-  val ≠ 1 → val = -1 := by
-  intro h_not_one
-  unfold HopfieldNetwork at hval
-  simp only at hval
-  cases hval with
-  | inl h_eq_one =>
-    contradiction
-  | inr h_eq_neg_one =>
-    exact h_eq_neg_one
-
-/--
 Extracts the first element from a vector of length 1.
--/
+--/
 def θ' : Vector R ((HopfieldNetwork R U).κ2 u) → R := fun (θ : Vector R 1) => θ.get 0
 
 /--
@@ -116,29 +101,52 @@ Returns:
 - A matrix where each element `(i, j)` is the product of the
 activations of `p1` at `i` and `p2` at `j`.
 -/
-abbrev outerProduct (p1 : (HopfieldNetwork R U).State)
-  (p2 : (HopfieldNetwork R U).State) : Matrix U U R := fun i j => p1.act i * p2.act j
+abbrev outerProduct (p1 : (HopfieldNetwork R U).Pattern)
+  (p2 : (HopfieldNetwork R U).Pattern) : Matrix U U R := fun i j => p1.act i * p2.act j
 
-variable {s : (HopfieldNetwork R U).State}
+variable {s : (HopfieldNetwork R U).Pattern}
 
-lemma NeuralNetwork.State.act_one_or_neg_one (u : U) : s.act u = 1 ∨ s.act u = -1 := s.hp u
+lemma NeuralNetwork.Pattern.act_one_or_neg_one (u : U) : s.act u = 1 ∨ s.act u = -1 := s.hp u
 
-/-- Instances o establish decidability of equality for network states
-  under certain conditions. -/
-instance decidableEqState :
-  DecidableEq ((HopfieldNetwork R U).State) := by
-  intro s₁ s₂
-  apply decidable_of_iff (∀ u, s₁.act u = s₂.act u) ⟨fun h ↦ ext h, fun h u ↦ by rw [h]⟩
+/--
+Defines the Hebbian learning rule for a Hopfield Network.
+
+Given a set of patterns `ps`, this function returns the network parameters
+using the Hebbian learning rule, which adjusts weights based on pattern correlations.
+--/
+def Hebbian {m : ℕ} (ps : Fin m → (HopfieldNetwork R U).Pattern) : Params (HopfieldNetwork R U) where
+  /- The weight matrix, calculated as the sum of the outer products of the patterns minus
+      a scaled identity matrix. -/
+  w := ∑ k, outerProduct (ps k) (ps k) - (m : R) • (1 : Matrix U U R)
+  /- The threshold function, which is set to a constant value of 0 for all units. -/
+  θ u := ⟨#[0], rfl⟩
+  /- The state function, which is set to an empty vector. --/
+  σ _ := Vector.emptyWithCapacity 0
+  /- A proof that the weight matrix is symmetric and satisfies the Hebbian learning rule. -/
+  hw u v huv := by
+    simp only [sub_apply, smul_apply, smul_eq_mul]
+    rw [Finset.sum_apply, Finset.sum_apply]
+    have : ∀ k i, (ps k).act i * (ps k).act i = 1 := by
+      intros k i ; rw [mul_self_eq_one_iff.mpr]; exact act_one_or_neg_one i
+    unfold HopfieldNetwork at huv
+    simp only [ne_eq, Decidable.not_not] at huv
+    rw [huv]
+    conv => enter [1, 1, 2];
+    simp only [this, sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul, mul_one, one_apply_eq,
+      sub_self]
+  /- A proof that the weight matrix is symmetric. -/
+  hw' := by
+    simp only [Matrix.IsSymm, Fin.isValue, transpose_sub, transpose_smul, transpose_one, sub_left_inj]
+    rw [isSymm_sum]
+    intro k
+    refine IsSymm.ext_iff.mpr (fun i j => CommMonoid.mul_comm ((ps k).act j) ((ps k).act i))
 
 variable (wθ : Params (HopfieldNetwork R U))
 
-@[simp]
 lemma act_up_def : (s.Up wθ u).act u =
     (if (wθ.θ u : Vector R ((HopfieldNetwork R U).κ2 u)).get 0 ≤ s.net wθ u then 1 else -1) := by
   simp only [Up, reduceIte, Fin.isValue]
-  rfl
 
-@[simp]
 lemma act_of_non_up (huv : v2 ≠ u) : (s.Up wθ u).act v2 = s.act v2 := by
   simp only [Up, if_neg huv]
 
@@ -146,73 +154,64 @@ lemma act_of_non_up (huv : v2 ≠ u) : (s.Up wθ u).act v2 = s.act v2 := by
 lemma act_new_neg_one_if_net_lt_th (hn : s.net wθ u < θ' (wθ.θ u)) : (s.Up wθ u).act u = -1 := by
   rw [act_up_def]; exact ite_eq_right_iff.mpr fun hyp => (hn.not_ge hyp).elim
 
-@[simp]
 lemma actnew_neg_one_if_net_lt_th (hn : s.net wθ u < θ' (wθ.θ u)) : (s.Up wθ u).act u = -1 :=
   ((s.Up wθ _).act_one_or_neg_one _).elim (fun _ => act_new_neg_one_if_net_lt_th wθ hn) id
 
-@[simp]
 lemma act_new_neg_one_if_not_net_lt_th (hn : ¬s.net wθ u < θ' (wθ.θ u)) : (s.Up wθ u).act u = 1 := by
   rw [act_up_def]; exact ite_eq_left_iff.mpr fun hyp => (hn (lt_of_not_ge hyp)).elim
 
-@[simp]
 lemma act_new_neg_one_if_net_eq_th (hn : s.net wθ u = θ' (wθ.θ u)) : (s.Up wθ u).act u = 1 := by
   rw [act_up_def]; exact ite_eq_left_iff.mpr fun hyp => (hyp (le_iff_lt_or_eq.mpr (Or.inr hn.symm))).elim
 
-@[simp]
 lemma activ_old_one (hc : (s.Up wθ u).act u ≠ s.act u) (hn : s.net wθ u < θ' (wθ.θ u)) : s.act u = 1 :=
   (act_one_or_neg_one _).elim id (fun h2 => (hc (actnew_neg_one_if_net_lt_th wθ hn ▸ h2.symm)).elim)
 
-@[simp]
 lemma actnew_one (hn : ¬s.net wθ u < θ' (wθ.θ u)) : (s.Up wθ u).act u = 1 :=
   ((s.Up wθ _).act_one_or_neg_one _).elim id (fun _ => act_new_neg_one_if_not_net_lt_th wθ hn)
 
-@[simp]
 lemma activ_old_neg_one (hc : (s.Up wθ u).act u ≠ s.act u) (_ : ¬s.net wθ u < θ' (wθ.θ u))
   (hnew : (s.Up wθ u).act u = 1) : s.act u = -1 :=
 (act_one_or_neg_one _).elim (fun h1 => (hc (hnew ▸ h1.symm)).elim) id
 
-@[simp]
 lemma act_eq_neg_one_if_up_act_eq_one_and_net_eq_th (hc : (s.Up wθ u).act u ≠ s.act u)
   (h2 : s.net wθ u = θ' (wθ.θ u)) (hactUp : (s.Up wθ u).act u = 1) : s.act u = -1 :=
 activ_old_neg_one wθ hc h2.symm.not_gt hactUp
 
 /--
-`NeuralNetwork.State.Wact` computes the weighted activation for neurons `u` and `v`
+`NeuralNetwork.Pattern.Wact` computes the weighted activation for neurons `u` and `v`
 by multiplying the weight `wθ.w u v` with their activations `s.act u` and `s.act v`.
 -/
-abbrev NeuralNetwork.State.Wact u v := wθ.w u v * s.act u * s.act v
+abbrev NeuralNetwork.Pattern.Wact u v := wθ.w u v * s.act u * s.act v
 
 /--
-`NeuralNetwork.State.Eθ` computes the sum of `θ' (wθ.θ u) * s.act u` for all `u`.
--/
-def NeuralNetwork.State.Eθ := ∑ u, θ' (wθ.θ u) * s.act u
+`NeuralNetwork.Pattern.Eθ` computes the sum of `θ' (wθ.θ u) * s.act u` for all `u`.
+--/
+def NeuralNetwork.Pattern.Eθ := ∑ u, θ' (wθ.θ u) * s.act u
 
 /--
-`NeuralNetwork.State.Ew` computes the energy contribution from the weights in a state.
+`NeuralNetwork.Pattern.Ew` computes the energy contribution from the weights in a pattern.
 It is defined as `-1/2` times the sum of `s.Wact wθ u v2` for all `u` and `v2` where `v2 ≠ u`.
 -/
-def NeuralNetwork.State.Ew := - 1/2 * (∑ u, (∑ v2 ∈ {v2 | v2 ≠ u}, s.Wact wθ u v2))
+def NeuralNetwork.Pattern.Ew := - 1/2 * (∑ u, (∑ v2 ∈ {v2 | v2 ≠ u}, s.Wact wθ u v2))
 
 /--
-Calculates the energy `E` of a state `s` in a Hopfield Network.
+Calculates the energy `E` of a pattern `s` in a Hopfield Network.
 
 The energy is the sum of:
 - `Ew` : Weighted energy component.
 - `Eθ` : Threshold energy component.
 
 Arguments:
-- `s`: A state in the Hopfield Network.
+- `s`: A pattern in the Hopfield Network.
 -/
-def NeuralNetwork.State.E (s : (HopfieldNetwork R U).State) : R := s.Ew wθ + s.Eθ wθ
+def NeuralNetwork.Pattern.E (s : (HopfieldNetwork R U).Pattern) : R := s.Ew wθ + s.Eθ wθ
 
-@[simp]
 lemma Wact_sym (v1 v2 : U) : s.Wact wθ v1 v2 = s.Wact wθ v2 v1 := by
   by_cases h : v1 = v2;
   · simp_rw [mul_comm, h]
   · simp_rw [mul_comm, congrFun (congrFun (id (wθ.hw').symm) v1) v2]
     exact mul_left_comm (s.act v2) (s.act v1) (wθ.w v2 v1)
 
-@[simp]
 lemma Ew_update_formula_split : s.Ew wθ = (- ∑ v2 ∈ {v2 | v2 ≠ u}, s.Wact wθ v2 u) +
   - 1/2 * ∑ v1, (∑ v2 ∈ {v2 | (v2 ≠ v1 ∧ v1 ≠ u) ∧ v2 ≠ u}, s.Wact wθ v1 v2) := by
 
@@ -230,14 +229,16 @@ lemma Ew_update_formula_split : s.Ew wθ = (- ∑ v2 ∈ {v2 | v2 ≠ u}, s.Wact
              ∑ v1 : U, ∑ v2 ∈ {v2 | (v2 ≠ v1 ∧ v1 ≠ u) ∧ v2 ≠ u}, s.Wact wθ v1 v2) := ?_
        _ = (- ∑ v2 ∈ {v2 | v2 ≠ u}, s.Wact wθ v2 u) +
             - 1/2 * ∑ v1, (∑ v2 ∈ {v2 | (v2 ≠ v1 ∧ v1 ≠ u) ∧ v2 ≠ u}, s.Wact wθ v1 v2) := ?_
-  · simp only [Ew, mul_sum, ← sum_add_distrib, ← sum_split]
-  · simp only [← sum_add_distrib, ← sum_split]
+  · simp only [Ew, mem_filter, mem_univ, true_and, true_implies, mul_sum, and_imp,
+     ← sum_add_distrib, ← sum_split]
+  · simp only [← sum_add_distrib, sum_congr, div_eq_zero_iff, neg_eq_zero,
+      one_ne_zero, OfNat.ofNat_ne_zero, or_self, or_false, ← sum_split]
   · rw [mul_add, ← add_assoc, add_right_cancel_iff]
 
     have sum_v1_v2_not_eq_v1_eq_u :
         ∑ v1, (∑ v2 ∈ {v2 | v2 ≠ v1 ∧ v1 = u}, s.Wact wθ v1 v2) = ∑ v2 ∈ {v2 | v2 ≠ u}, s.Wact wθ u v2 := by
       rw [Fintype.sum_eq_single u]; simp only [and_true];
-      intro v1 hv1; simp_all only [and_false, Finset.filter_false, sum_empty]
+      intro v1 hv1; simp_all only [and_false, filter_False, sum_empty]
     rw [sum_v1_v2_not_eq_v1_eq_u]
 
     have sum_v1_v2_not_eq_v1_eq_u' :
@@ -250,7 +251,7 @@ lemma Ew_update_formula_split : s.Ew wθ = (- ∑ v2 ∈ {v2 | v2 ≠ u}, s.Wact
             intro a; subst a; simp_all only [not_true_eq_false]
           · intro hv1 _ a; simp_all only [mem_univ, and_false, reduceIte]
           · intro a; simp_all only [mem_univ, not_true_eq_false]
-        · simp_all only [Decidable.not_not, not_and_self, Finset.filter_false, sum_empty]
+        · simp_all only [Decidable.not_not, not_and_self, filter_False, sum_empty]
       simp_rw [sum_Wact_v1_u, ite_not, mem_filter, mem_univ, true_and];
       split; next h => exact (if_neg fun hv1u => hv1u h).symm; ; exact Wact_sym wθ v1 u
 
@@ -264,7 +265,6 @@ lemma Ew_update_formula_split : s.Ew wθ = (- ∑ v2 ∈ {v2 | v2 ≠ u}, s.Wact
     simp_all only [neg_mul, one_mul, isUnit_iff_ne_zero, ne_eq,
       OfNat.ofNat_ne_zero, not_false_eq_true, IsUnit.inv_mul_cancel_left]
 
-@[simp]
 lemma Ew_diff' : (s.Up wθ u).Ew wθ - s.Ew wθ =
     - ∑ v2 ∈ {v2 | v2 ≠ u}, (s.Up wθ u).Wact wθ v2 u - (- ∑ v2 ∈ {v2 | v2 ≠ u}, s.Wact wθ v2 u) := by
   rw [Ew_update_formula_split, Ew_update_formula_split, sub_eq_add_neg, sub_eq_add_neg]
@@ -284,10 +284,9 @@ lemma Ew_diff' : (s.Up wθ u).Ew wθ - s.Ew wθ =
     simp only [mem_univ, true_implies]; intro v1
     rw [mul_sum, mul_sum, ← sum_neg_distrib, ← sum_add_distrib, sum_eq_zero]
     simp only [mem_filter, mem_univ, true_and, and_imp]; intro v2 _ hv1 hvneg2
-    simp_all only [Wact, Up, reduceIte, add_neg_cancel]
+    simp_all only [Wact, Up, mul_ite, ite_mul, reduceIte, add_neg_cancel]
   simp only [sub_neg_eq_add]
 
-@[simp]
 lemma θ_stable : ∑ v2 ∈ {v2 | v2 ≠ u}, θ' (wθ.θ v2) * s.act v2 =
     ∑ v2 ∈ {v2 | v2 ≠ u}, θ' (wθ.θ v2) * (s.Up wθ u).act v2 := by
   rw [sum_congr rfl]; intro v2 hv2; rw [act_of_non_up]
@@ -299,22 +298,20 @@ lemma θ_formula : ∑ v2, θ' (wθ.θ v2) * s.act v2 = θ' (wθ.θ u) * s.act u
     rw [sum_filter]; simp only [sum_ite_eq', mem_univ, reduceIte]
   rw [← this]; rw [sum_filter_add_sum_filter_not]
 
-@[simp]
 theorem Eθ_diff : (s.Up wθ u).Eθ wθ - s.Eθ wθ = θ' (wθ.θ u) * ((s.Up wθ u).act u - s.act u) := by
   calc _ =  θ' (wθ.θ u) * (s.Up wθ u).act u + ∑ v2 ∈ {v2 | v2 ≠ u}, θ' (wθ.θ v2) * (s.Up wθ u).act v2 +
           - (θ' (wθ.θ u) * s.act u + ∑ v2 ∈ {v2 | v2 ≠ u}, θ' (wθ.θ v2) * s.act v2) := ?_
        _ = θ' (wθ.θ u) * ((s.Up wθ u).act u - s.act u) := ?_
-  · unfold NeuralNetwork.State.Eθ; rw [θ_formula, θ_formula, θ_stable]
+  · unfold NeuralNetwork.Pattern.Eθ; rw [θ_formula, θ_formula, θ_stable]
     rw [sub_eq_add_neg (θ' (wθ.θ u) * (s.Up wθ u).act u +
         ∑ v2 ∈ {v2 | v2 ≠ u}, θ' (wθ.θ v2) * ((s.Up wθ u).Up wθ u).act v2)
         (θ' (wθ.θ u) * s.act u + ∑ v2 ∈ {v2 | v2 ≠ u}, θ' (wθ.θ v2) * s.act v2)]
   · rw [neg_add_rev, (add_assoc (θ' (wθ.θ u) * (s.Up wθ u).act u +
       ∑ v2 ∈ {v2 | v2 ≠ u}, θ' (wθ.θ v2) * (s.Up wθ u).act v2)
        (-∑ v2 ∈ {v2 | v2 ≠ u}, θ' (wθ.θ v2) * s.act v2) (-(θ' (wθ.θ u) * s.act u))).symm]
-    simp only [add_assoc]; nth_rw 2 [θ_stable]
+    simp only [add_assoc, add_right_inj, add_eq_left]; nth_rw 2 [θ_stable]
     rw [sub_eq_add_neg, mul_add, mul_neg]; simp only [add_neg_cancel_left]
 
-@[simp]
 lemma E_final_Form : (s.Up wθ u).E wθ - s.E wθ = (s.act u - (s.Up wθ u).act u) *
     ((∑ v2 ∈ {v2 | v2 ≠ u}, wθ.w u v2 * s.act v2) - θ' (wθ.θ u)) := by
   calc _ = (s.Up wθ u).Eθ wθ- s.Eθ wθ +  (s.Up wθ u).Ew wθ - s.Ew wθ := ?_
@@ -331,7 +328,7 @@ lemma E_final_Form : (s.Up wθ u).E wθ - s.E wθ = (s.act u - (s.Up wθ u).act 
        _ = - ((s.Up wθ u).act u - s.act u) * ((∑ v2 ∈ {v2 | v2 ≠ u}, wθ.w v2 u * s.act v2) - θ' (wθ.θ u)) := ?_
        _ = (s.act u - (s.Up wθ u).act u) * ((∑ v2 ∈ {v2 | v2 ≠ u}, wθ.w u v2 * s.act v2) - θ' (wθ.θ u)) := ?_
 
-  · simp_rw [NeuralNetwork.State.E, sub_eq_add_neg, neg_add_rev]
+  · simp_rw [NeuralNetwork.Pattern.E, sub_eq_add_neg, neg_add_rev]
     rw [add_assoc, add_comm, ← add_assoc, add_right_comm (Eθ wθ + -Eθ wθ) (-Ew wθ) (Ew wθ) ]
   · rw [add_sub_assoc (Eθ wθ - Eθ wθ) (Ew wθ) (Ew wθ), Eθ_diff, Ew_diff']
     nth_rw 1 [add_comm]; simp only [sub_neg_eq_add, neg_mul, add_left_inj]
@@ -356,7 +353,6 @@ lemma E_final_Form : (s.Up wθ u).E wθ - s.E wθ = (s.act u - (s.Up wθ u).act 
     simp_all only [mem_filter, mem_univ, true_and, mul_eq_mul_right_iff]
     left; exact ((congrFun (congrFun (id (wθ.hw').symm) u) v2).symm)
 
-@[simp]
 lemma energy_diff_leq_zero (hc : (s.Up wθ u).act u ≠ s.act u) : (s.Up wθ u).E wθ ≤ s.E wθ := by
   apply le_of_sub_nonpos; rw [E_final_Form]
   by_cases hs : s.net wθ u < θ' (wθ.θ u)
@@ -372,9 +368,9 @@ lemma energy_diff_leq_zero (hc : (s.Up wθ u).act u ≠ s.act u) : (s.Up wθ u).
     · apply sub_nonneg_of_le; rwa [← not_lt]
 
 /--
-`NeuralNetwork.State.pluses` counts the number of neurons in the state `s` with activation `1`.
+`NeuralNetwork.Pattern.pluses` counts the number of neurons in the pattern `s` with activation `1`.
 -/
-def NeuralNetwork.State.pluses := ∑ u, if s.act u = 1 then 1 else 0
+def NeuralNetwork.Pattern.pluses := ∑ u, if s.act u = 1 then 1 else 0
 
 @[simp]
 theorem energy_lt_zero_or_pluses_increase (hc : (s.Up wθ u).act u ≠ s.act u) :
@@ -384,8 +380,7 @@ theorem energy_lt_zero_or_pluses_increase (hc : (s.Up wθ u).act u ≠ s.act u) 
   cases hr --with h1 h2
   · rename_i h1
     rw [sub_eq_zero] at h1; apply sum_lt_sum;
-    · simp_all only [ne_eq, not_true_eq_false]
-    · simp_all only [ne_eq, not_true_eq_false]
+    grind; grind
   · rename_i h2
     rw [sub_eq_zero] at h2
     have hactUp := act_new_neg_one_if_net_eq_th wθ h2
@@ -402,12 +397,12 @@ theorem energy_lt_zero_or_pluses_increase (hc : (s.Up wθ u).act u ≠ s.act u) 
       · simp_all only
       · simp only [zero_lt_one, true_and, mem_univ]))
 
-variable (extu : (HopfieldNetwork R U).State) (hext : extu.onlyUi)
+variable (extu : (HopfieldNetwork R U).Pattern) (hext : extu.onlyUi)
 
 /--
-`stateToActValMap` maps a state from a `HopfieldNetwork` to the set `{-1, 1}`.
+`stateToActValMap` maps a pattern from a `HopfieldNetwork` to the set `{-1, 1}`.
 -/
-def stateToActValMap : (HopfieldNetwork R U).State → ({-1,1} : Finset R) := fun _ => by
+def stateToActValMap : (HopfieldNetwork R U).Pattern → ({-1,1} : Finset R) := fun _ => by
  simp_all only [mem_insert, mem_singleton]; apply Subtype.mk; apply Or.inr; rfl
 
 /--
@@ -416,10 +411,10 @@ def stateToActValMap : (HopfieldNetwork R U).State → ({-1,1} : Finset R) := fu
 def neuronToActMap : U → ({-1,1} : Finset R) := fun _ => stateToActValMap s
 
 /--
-`stateToNeurActMap` maps a Hopfield Network state to a function that returns
+`stateToNeurActMap` maps a Hopfield Network pattern to a function that returns
 the activation state (1 or -1) of a given neuron.
 -/
-def stateToNeurActMap : (HopfieldNetwork R U).State → (U → ({1,-1} : Finset R)) := fun s u =>
+def stateToNeurActMap : (HopfieldNetwork R U).Pattern → (U → ({1,-1} : Finset R)) := fun s u =>
   ⟨s.act u, by simp only [mem_insert, mem_singleton, s.act_one_or_neg_one u]⟩
 
 /--
@@ -428,7 +423,7 @@ of a `HopfieldNetwork` and a function type `U → ({1, -1} : Finset R)`.
 This equivalence allows for easier manipulation of neural network states.
 -/
 def NeuralNetwork.stateToNeurActMap_equiv' :
-    (HopfieldNetwork R U).State ≃ (U → ({1,-1} : Finset R)) where
+    (HopfieldNetwork R U).Pattern ≃ (U → ({1,-1} : Finset R)) where
   toFun := stateToNeurActMap
   invFun := fun f =>
    { act := fun u => f u, hp := fun u => by
@@ -438,19 +433,19 @@ def NeuralNetwork.stateToNeurActMap_equiv' :
   left_inv := congrFun rfl
   right_inv := congrFun rfl
 
-instance : Fintype ((HopfieldNetwork R U).State) := Fintype.ofEquiv _ ((stateToNeurActMap_equiv').symm)
+instance : Fintype ((HopfieldNetwork R U).Pattern) := Fintype.ofEquiv _ ((stateToNeurActMap_equiv').symm)
 
 /--
-`State'` is a type alias for the state of a `HopfieldNetwork` with given parameters.
+`State` is a type alias for the pattern of a `HopfieldNetwork` with given parameters.
 -/
-def State' (_ : Params (HopfieldNetwork R U)) := (HopfieldNetwork R U).State
+def State (_ : Params (HopfieldNetwork R U)) := (HopfieldNetwork R U).Pattern
 
 variable {wθ : Params (HopfieldNetwork R U)}
 
 /--
 `Up'` updates the state `s` at neuron `u`.
 -/
-abbrev Up' (s : State' wθ) (u : U) : State' wθ := s.Up wθ u
+abbrev Up' (s : State wθ) (u : U) : State wθ := s.Up wθ u
 
 /--
 Generates a sequence of states for a Hopfield Network.
@@ -459,8 +454,8 @@ Parameters:
 - `s`: A state.
 - `useq`: A sequence of states.
 
--/
-def seqStates' {wθ : Params (HopfieldNetwork R U)} (s : State' wθ) (useq : ℕ → U) : ℕ → State' wθ
+--/
+def seqStates' {wθ : Params (HopfieldNetwork R U)} (s : State wθ) (useq : ℕ → U) : ℕ → State wθ
   := seqStates wθ s useq
 
 /--
@@ -469,9 +464,7 @@ and the number of pluses.
 A state `s1` is before `s2` if:
 - `s1` has lower energy than `s2`, or
 - `s1` has the same energy as `s2`, but more pluses.
--/
-def stateLt (s1 s2 : State' wθ) : Prop := s1.E wθ < s2.E wθ ∨ s1.E wθ = s2.E wθ ∧ s2.pluses < s1.pluses
-
+--/
 @[simp]
 lemma stateLt_antisym (s1 s2 : State' wθ) : stateLt s1 s2 → ¬stateLt s2 s1 := by
   rintro (h1 | ⟨_, h3⟩) (h2 | ⟨_, h4⟩)
@@ -480,13 +473,14 @@ lemma stateLt_antisym (s1 s2 : State' wθ) : stateLt s1 s2 → ¬stateLt s2 s1 :
   · simp_all only [lt_self_iff_false]
   · exact h3.not_gt h4
 
+
 /--
 Defines a partial order on states. The relation `stateOrd` holds between two states `s1` and `s2`
 if `s1` is equal to `s2` or if `s1` is before `s2` according to `stateLt`.
 -/
-def stateOrd (s1 s2 : State' wθ) : Prop := s1 = s2 ∨ stateLt s1 s2
+def stateOrd (s1 s2 : State wθ) : Prop := s1 = s2 ∨ stateLt s1 s2
 
-instance StatePartialOrder : PartialOrder (State' wθ) where
+instance StatePartialOrder : PartialOrder (State wθ) where
   le s1 s2 := stateOrd s1 s2
   le_refl _ := Or.inl rfl
   le_trans s1 s2 s3 h12 h23 := by
@@ -508,8 +502,7 @@ instance StatePartialOrder : PartialOrder (State' wθ) where
     · cases' h21 with h21 h21; exact h21.symm
       by_contra; exact stateLt_antisym s1 s2 h12 h21
 
-@[simp]
-lemma stateLt_lt (s1 s2 : State' wθ) : s1 < s2 ↔ stateLt s1 s2 := by
+lemma stateLt_lt (s1 s2 : State wθ) : s1 < s2 ↔ stateLt s1 s2 := by
   simp only [LT.lt]; unfold stateOrd; simp_all only [not_or]
   constructor
   · intro H; obtain ⟨hl, hr⟩ := H
@@ -521,31 +514,26 @@ lemma stateLt_lt (s1 s2 : State' wθ) : s1 < s2 ↔ stateLt s1 s2 := by
     constructor
     · intro hs; subst hs;
       have : ¬stateLt s2 s2:= fun
-        | Or.inl h1 => h1.not_gt h1
-        | Or.inr ⟨_, h3⟩ => h3.not_gt h3
+        | Or.inl h1 => h1.not_lt h1
+        | Or.inr ⟨_, h3⟩ => h3.not_lt h3
       exact this hs2
     · intro hs; apply stateLt_antisym s1 s2 hs2 hs
 
-@[simp]
-lemma state_act_eq (s1 s2 : State' wθ) : s1.act = s2.act → s1 = s2 := by
+lemma state_act_eq (s1 s2 : State wθ) : s1.act = s2.act → s1 = s2 := by
   intro h; cases' s1 with act1 hact1; cases' s2 with act2 hact2
   simp only at h; simp only [h]
 
-@[simp]
-lemma state_Up_act (s : State' wθ) : (Up' s u).act u = s.act u → Up' s u = s := by
+lemma state_Up_act (s : State wθ) : (Up' s u).act u = s.act u → Up' s u = s := by
   intro h; cases' s with act hact; apply state_act_eq; ext v
   by_cases huv : v = u; simp only [huv, h]; simp only [Up', Up, huv, reduceIte]
 
-@[simp]
-lemma up_act_eq_act_of_up_eq (s : State' wθ) : Up' s u = s → (Up' s u).act u = s.act u := fun hs =>
+lemma up_act_eq_act_of_up_eq (s : State wθ) : Up' s u = s → (Up' s u).act u = s.act u := fun hs =>
   congrFun (congrArg act hs) u
 
-@[simp]
-lemma up_act_eq_iff_eq (s : State' wθ) : (Up' s u).act u = s.act u ↔ Up' s u = s := by
+lemma up_act_eq_iff_eq (s : State wθ) : (Up' s u).act u = s.act u ↔ Up' s u = s := by
   exact ⟨state_Up_act s, fun hs => congrFun (congrArg act hs) u⟩
 
-@[simp]
-lemma update_less' (s : State' wθ) : Up' s u ≠ s → Up' s u < s := fun h => by
+lemma update_less' (s : State wθ) : Up' s u ≠ s → Up' s u < s := fun h => by
   simp only [stateLt_lt]
   apply energy_lt_zero_or_pluses_increase
   intros H
@@ -553,75 +541,66 @@ lemma update_less' (s : State' wθ) : Up' s u ≠ s → Up' s u < s := fun h => 
   apply state_Up_act
   assumption
 
-@[simp]
-lemma update_le (s : State' wθ) : Up' s u ≤ s := by
+lemma update_le (s : State wθ) : Up' s u ≤ s := by
   by_cases h : Up' s u = s; left; assumption
   right; simp only [← stateLt_lt]; exact update_less' s h
 
-@[simp]
 lemma n_leq_n'_imp_sseq_n (n : ℕ) :
   (seqStates wθ s useq (n + 1)) = (seqStates wθ s useq n).Up wθ (useq n):= by
   unfold seqStates; split; rfl; simp_all only [Nat.succ_eq_add_one]; rfl
 
-@[simp]
 lemma n_leq_n'_imp_sseq_n_k'' (n : ℕ) :
   (seqStates wθ s useq (n+1)) = (seqStates wθ s useq n).Up wθ (useq n):= rfl
 
-@[simp]
 lemma n_leq_n'_imp_sseq_n_k (n k : ℕ) :
   (seqStates wθ s useq ((n + k) + 1)) = (seqStates wθ s useq (n + k)).Up wθ (useq (n + k)) := by
   simp only [seqStates]
 
-@[simp]
-lemma NeuralNetwork.n_leq_n'_imp_sseq_n'_leq_sseq''  (s : State' wθ) (n k : ℕ) :
+lemma NeuralNetwork.n_leq_n'_imp_sseq_n'_leq_sseq''  (s : State wθ) (n k : ℕ) :
   seqStates' s useq (n + k) ≤ seqStates' s useq n := by
   induction k with
   | zero => simp only [Nat.add_zero]; apply le_refl
   | succ k hk => rw [Nat.add_succ, seqStates', n_leq_n'_imp_sseq_n_k]; trans; apply update_le; exact hk
 
-@[simp]
-lemma not_stable_u (s : (HopfieldNetwork R U).State) : ¬s.isStable wθ → ∃ u, (s.Up wθ u) ≠ s := by
+lemma not_stable_u (s : (HopfieldNetwork R U).Pattern) : ¬s.isStable wθ → ∃ u, (s.Up wθ u) ≠ s := by
   intro h;
   obtain ⟨u, h⟩ := not_forall.mp h
   exact ⟨u, fun a => h (congrFun (congrArg act a) u)⟩
 
-@[simp]
-theorem seqStates_lt (s : State' wθ) (useq : ℕ → U) (n : ℕ) (m' : ℕ) (hm' : m' > n) :
+theorem seqStates_lt (s : State wθ) (useq : ℕ → U) (n : ℕ) (m' : ℕ) (hm' : m' > n) :
   seqStates' s useq m' ≤ seqStates' s useq n := by
   obtain ⟨k, hk⟩ := Nat.exists_eq_add_of_le' hm'
   rw [hk, Nat.add_left_comm k n 1]
   exact n_leq_n'_imp_sseq_n'_leq_sseq'' s n (k + 1)
 
-variable (s s' : State' wθ)
+variable (s s' : State wθ)
 
 instance : DecidablePred (fun s' => s' < s) := fun s' => by
   simp only; rw [stateLt_lt, stateLt]; exact instDecidableOr
 
 /--
-`states_less` is the set of patterns in a Hopfield Network that are less than a given state `s`.
--/
-def states_less : Finset (HopfieldNetwork R U).State := {s' : State' wθ | s' < s}
+`states_less` is the set of patterns in a Hopfield Network that come before a given state `s`.
+--/
+def states_less : Finset (HopfieldNetwork R U).Pattern := {s' : State wθ | s' < s}
 
 open Fintype
 
 /--
 `num_of_states_less` returns the number of states that come before a given state `s`.
--/
+--/
 def num_of_states_less := Fintype.card (states_less s)
 
-@[simp]
 lemma num_of_states_decreases (hs : s < s') :
   num_of_states_less s < num_of_states_less s' := by
   unfold num_of_states_less states_less
   simp only [Fintype.card_coe]
   apply Finset.card_lt_card
   rw [Finset.ssubset_iff_of_subset]
-  simp only [mem_filter, mem_univ, true_and]
-  use s; exact ⟨hs, lt_irrefl s⟩
+  simp only [mem_filter, mem_univ, true_and, not_lt]
+  use s; exact ⟨hs, gt_irrefl s⟩
   simp only [Finset.subset_iff, mem_filter, mem_univ, true_and]
   exact fun _ hx => hx.trans hs
 
-@[simp]
 lemma num_of_states_leq_zero_implies_stable (hn : num_of_states_less s = 0) :
   s.isStable wθ := fun u => by
   cases' update_le s with h1 h2
@@ -632,7 +611,6 @@ lemma num_of_states_leq_zero_implies_stable (hn : num_of_states_less s = 0) :
     simp only [mem_filter, mem_univ, true_and, isEmpty_subtype] at hn
     cases hn ((s.Up wθ u)) h2
 
-@[simp]
 lemma seqStates_le' (useq : ℕ → U) (n : ℕ) (m' : ℕ) (hm' : m' ≥ n) :
   seqStates' s useq m' ≤ seqStates' s useq n := by
     simp only [ge_iff_le, le_iff_lt_or_eq] at hm'
@@ -640,7 +618,6 @@ lemma seqStates_le' (useq : ℕ → U) (n : ℕ) (m' : ℕ) (hm' : m' ≥ n) :
     · exact seqStates_lt s useq n m' h1
     · exact le_of_eq (congrArg (seqStates wθ s useq) (id (h2.symm)))
 
-@[simp]
 lemma not_stable_implies_sseqm_lt_sseqn (useq : ℕ → U) (hf : fair useq) (n : ℕ)
     (hstable : ¬ (seqStates' s useq n).isStable wθ) :
   ∃ m, m ≥ n ∧ (seqStates' s useq m) < (seqStates' s useq n) := by
@@ -656,54 +633,50 @@ lemma not_stable_implies_sseqm_lt_sseqn (useq : ℕ → U) (hf : fair useq) (n :
       · apply update_less' (seqStates' s useq m')
         intro a; simp_all only [not_true_eq_false]
 
-@[simp]
-lemma num_of_states_leq_c_implies_stable_sseq (s : (HopfieldNetwork R U).State)
+lemma num_of_states_leq_c_implies_stable_sseq (s : (HopfieldNetwork R U).Pattern)
   (useq : ℕ → U) (hf : fair useq) (c : ℕ) :
-    ∀ n : ℕ, (@num_of_states_less _ _ _ _ _ _ _ _ wθ (seqStates' s useq n)) ≤ c →
-  ∃ m ≥ n, (@seqStates' _ _ _ _ _ _ _ _ wθ s useq m).isStable wθ := by
+    ∀ n : ℕ, (@num_of_states_less _ _ _ _ _ _ wθ (seqStates' s useq n)) ≤ c →
+  ∃ m ≥ n, (@seqStates' _ _ _ _ _ _ wθ s useq m).isStable wθ := by
   induction' c with c hc
   · intros n hn; use n; constructor
     · apply Nat.le_refl
     · apply num_of_states_leq_zero_implies_stable
       simp only [nonpos_iff_eq_zero] at hn; assumption
   · intros n hn;
-    by_cases H : (@seqStates' _ _ _ _ _ _ _ _ wθ s useq n).isStable wθ
+    by_cases H : (@seqStates' _ _ _ _ _ _ wθ s useq n).isStable wθ
     · use n
     · obtain ⟨m, ⟨hm, hlt⟩⟩ := not_stable_implies_sseqm_lt_sseqn s useq hf n H
-      have : @num_of_states_less _ _ _ _ _ _ _ _ wθ (seqStates' s useq m)
-        < @num_of_states_less _ _ _ _ _ _ _ _ wθ (seqStates' s useq n) := by
+      have : @num_of_states_less _ _ _ _ _ _ wθ (seqStates' s useq m)
+        < @num_of_states_less _ _ _ _ _ _ wθ (seqStates' s useq n) := by
           apply num_of_states_decreases; assumption
-      have : @num_of_states_less _ _ _ _ _ _ _ _ wθ (seqStates' s useq m) ≤ c := by
+      have : @num_of_states_less _ _ _ _ _ _ wθ (seqStates' s useq m) ≤ c := by
         apply Nat.le_of_lt_succ;
         rw [← Nat.succ_eq_add_one] at hn
-        calc _ < @num_of_states_less _ _ _ _ _ _ _ _ wθ (seqStates' s useq n) := this
+        calc _ < @num_of_states_less _ _ _ _ _ _ wθ (seqStates' s useq n) := this
              _ ≤ c.succ := hn
       obtain ⟨m', ⟨hm', hstable⟩⟩ := hc m this
       use m'; constructor
       trans; assumption; assumption; assumption
 
-@[simp]
 theorem HopfieldNet_convergence_fair : ∀ (useq : ℕ → U), fair useq →
   ∃ N, (seqStates' s useq N).isStable wθ := fun useq hfair => by
-  let c := @num_of_states_less _ _ _ _ _ _ _ _ wθ (seqStates' s useq 0)
+  let c := @num_of_states_less _ _ _ _ _ _ wθ (seqStates' s useq 0)
   obtain ⟨N, ⟨_, hN⟩⟩ := num_of_states_leq_c_implies_stable_sseq s useq hfair c 0 (Nat.le_refl c)
   use N
 
-instance (s : State' wθ): Decidable (isStable wθ s) := Fintype.decidableForallFintype
+instance (s : State wθ): Decidable (isStable wθ s) := Fintype.decidableForallFintype
 
 /--
 A function that returns the stabilized state after updating.
--/
+--/
 def HopfieldNet_stabilize (wθ : Params (HopfieldNetwork R U))
-    (s : State' wθ) (useq : ℕ → U) (hf : fair useq) : State' wθ :=
+    (s : State wθ) (useq : ℕ → U) (hf : fair useq) : State wθ :=
   (seqStates' s useq) (Nat.find (HopfieldNet_convergence_fair s useq hf))
 
-@[simp]
-lemma isStable_HN_stabilize : ∀ (s : State' wθ) (useq : ℕ → U) (hf : fair useq),
+lemma isStable_HN_stabilize : ∀ (s : State wθ) (useq : ℕ → U) (hf : fair useq),
   (HopfieldNet_stabilize wθ s useq hf).isStable wθ := fun s useq hf =>
   Nat.find_spec (HopfieldNet_convergence_fair s useq hf)
 
-@[simp]
 lemma not_stable_implies_sseqm_lt_sseqn_cyclic (useq : ℕ → U) (hf : cyclic useq) (n : ℕ)
     (hstable : ¬ (seqStates' s useq n).isStable wθ) :
   ∃ m, m ≥ n ∧ m ≤ n + card U ∧ (seqStates' s useq m) < (seqStates' s useq n) := by
@@ -715,7 +688,7 @@ lemma not_stable_implies_sseqm_lt_sseqn_cyclic (useq : ℕ → U) (hf : cyclic u
   have :  seqStates' s useq m' ≤ (seqStates' s useq n) := seqStates_le' s useq n m' hm'
   cases' (le_iff_lt_or_eq.mp this) with h1 h2
   · use m'; constructor; exact hm'; subst hfoo
-    simp_all only [and_true]
+    simp_all only [gt_iff_lt, and_self, and_true]
     rw [le_iff_lt_or_eq]; left; exact hm
   · use m' + 1; simp only [ge_iff_le] at hm'; constructor
     · simp only [ge_iff_le]; exact Nat.le_add_right_of_le hm'
@@ -724,10 +697,9 @@ lemma not_stable_implies_sseqm_lt_sseqn_cyclic (useq : ℕ → U) (hf : cyclic u
       · calc _ < _ := ?_
              _ = _ := h2
         · apply update_less' (seqStates' s useq m')
-          intro a; simp_all only
+          intro a; simp_all only [not_true_eq_false]
 
-@[simp]
-lemma num_of_states_leq_c_implies_stable_sseq_cyclic (s : State' wθ) (useq : ℕ → U)
+lemma num_of_states_leq_c_implies_stable_sseq_cyclic (s : State wθ) (useq : ℕ → U)
   (hcy : cyclic useq) (c : ℕ) : ∀ n, num_of_states_less (seqStates' s useq n) ≤ c →
   ∃ m ≥ n, m ≤ n + card U * c ∧ (s.seqStates wθ useq m).isStable wθ := by
   induction' c with c hc
@@ -765,8 +737,7 @@ lemma num_of_states_leq_c_implies_stable_sseq_cyclic (s : State' wθ) (useq : �
                 exact Nat.add_comm (card U) (card U * c)
         · exact hstable.2
 
-@[simp]
-lemma num_of_states_card : card (HopfieldNetwork R U).State = 2 ^ card U := by
+lemma num_of_states_card : card (HopfieldNetwork R U).Pattern = 2 ^ card U := by
   rw [Fintype.card_congr (stateToNeurActMap_equiv')]
   have h3 : #({1,-1} : Finset R) = 2 := by
     refine Finset.card_pair ?h
@@ -775,14 +746,12 @@ lemma num_of_states_card : card (HopfieldNetwork R U).State = 2 ^ card U := by
   simp only [mem_insert, mem_singleton, Fintype.card_coe]
   exact congrFun (congrArg HPow.hPow h3) (card U)
 
-@[simp]
 lemma NeuralNetwork.initial_state_bound (useq : ℕ → U) :
   num_of_states_less (seqStates' s useq 0) ≤ 2 ^ card U := by
   rw [num_of_states_less, Fintype.card_of_subtype]
   rw [← @num_of_states_card R _ _ _]
   exact card_le_univ (states_less s); intros x; rfl
 
-@[simp]
 theorem HopfieldNet_convergence_cyclic : ∀ (useq : ℕ → U), cyclic useq →
     ∃ N, N ≤ card U * (2 ^ card U) ∧
   (s.seqStates wθ useq N).isStable wθ := fun useq hcy => by
@@ -795,17 +764,104 @@ theorem HopfieldNet_convergence_cyclic : ∀ (useq : ℕ → U), cyclic useq →
 a sequence of updates `useq`, and a proof `hf` that the sequence is cyclic.
 It returns the state of the network after convergence.
 -/
-def HopfieldNet_stabilize_cyclic (s : State' wθ) (useq : ℕ → U) (hf : cyclic useq) : State' wθ :=
+def HopfieldNet_stabilize_cyclic (s : State wθ) (useq : ℕ → U) (hf : cyclic useq) : State wθ :=
   (seqStates' s useq) (Nat.find (HopfieldNet_convergence_cyclic s useq hf))
 
 /--
 `HopfieldNet_conv_time_steps` calculates the number of time steps required for a Hopfield Network to converge.
 -/
-def HopfieldNet_conv_time_steps (wθ : Params (HopfieldNetwork R U)) (s : State' wθ)
+def HopfieldNet_conv_time_steps (wθ : Params (HopfieldNetwork R U)) (s : State wθ)
     (useq : ℕ → U) (hf : cyclic useq) : ℕ :=
   (Nat.find (HopfieldNet_convergence_cyclic s useq hf))
 
-lemma HopfieldNet_cyclic_converg (wθ : Params (HopfieldNetwork R U)) (s : State' wθ)
+lemma HopfieldNet_cyclic_converg (wθ : Params (HopfieldNetwork R U)) (s : State wθ)
   (useq : ℕ → U) (hf : cyclic useq) :
     (HopfieldNet_stabilize_cyclic s useq hf).isStable wθ :=
   (Nat.find_spec (HopfieldNet_convergence_cyclic s useq hf)).2
+
+lemma patterns_pairwise_orthogonal (ps : Fin m → (HopfieldNetwork R U).Pattern)
+  (horth : ∀ {i j : Fin m} (_ : i ≠ j), dotProduct (ps i).act (ps j).act = 0) :
+  ∀ (j : Fin m), ((Hebbian ps).w).mulVec (ps j).act = (card U - m) * (ps j).act := by
+  intros k
+  ext t
+  unfold Hebbian
+  simp only [sub_apply, smul_apply, smul_eq_mul]
+  rw [mulVec, dotProduct]
+  simp only [sub_apply, smul_apply, smul_eq_mul, Pi.natCast_def, Pi.mul_apply, Pi.sub_apply]
+  rw [Finset.sum_apply]
+  simp only [Finset.sum_apply]
+  unfold dotProduct at horth
+  have : ∀ i j, (dotProduct (ps i).act (ps j).act) = if i ≠ j then 0 else card U := by
+    intros i j
+    by_cases h : i ≠ j
+    · specialize horth h
+      simp_all only [ne_eq, not_false_eq_true, reduceIte, Nat.cast_zero]
+      assumption
+    · simp only [Decidable.not_not] at h
+      nth_rw 1 [h]
+      simp only [ite_not, Nat.cast_ite, Nat.cast_zero]
+      refine eq_ite_iff.mpr ?_
+      left
+      constructor
+      · assumption
+      · unfold dotProduct
+        have hact : ∀ i, ((ps j).act i) = 1 ∨  ((ps j).act i) = -1 := fun i => act_one_or_neg_one i
+        have hact1 : ∀ i, ((ps j).act i) * ((ps j).act i) = 1 := fun i => mul_self_eq_one_iff.mpr (hact i)
+        calc _ = ∑ i, (ps j).act i * (ps j).act i := rfl
+             _ = ∑ i, 1 * 1 := by simp_rw [hact1]; rw [mul_one]
+             _ = card U := by simp only [sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul,
+                mul_one]
+  simp only [dotProduct, ite_not, Nat.cast_ite, Nat.cast_zero] at this
+  conv => enter [1,2]; ext l; rw [sub_mul]; rw [sum_mul]; conv => enter [1,2]; ext i; rw [mul_assoc]
+  rw [Finset.sum_sub_distrib]
+  nth_rw 1 [sum_comm]
+  calc _= ∑ y : Fin m, (ps y).act t * ∑ x , ((ps y).act x * (ps k).act x)
+          - ∑ x , ↑m * (1 : Matrix U U R) t x * (ps k).act x := ?_
+       _= ∑ y : Fin m, (ps y).act t *  (if y ≠ k then 0 else card U) -
+            ∑ x , ↑m * (1 : Matrix U U R) t x * (ps k).act x := ?_
+       _ = (card U - ↑m) * (ps k).act t  := ?_
+  · simp only [sub_left_inj]; rw [Finset.sum_congr rfl]
+    exact fun x _ => (mul_sum univ (fun i => (ps x).act i * (ps k).act i) ((ps x).act t)).symm
+  · simp only [sub_left_inj]; rw [Finset.sum_congr rfl]; intros i _
+    simp_all only [reduceIte, implies_true, mem_univ, mul_ite, mul_zero, ite_not, Nat.cast_ite, Nat.cast_zero]
+  · simp only [ite_not, Nat.cast_ite, Nat.cast_zero, mul_ite, mul_zero, Finset.sum_ite_eq', mem_univ, reduceIte]
+    conv => enter [1,2,2]; ext k; rw [mul_assoc]
+    rw [← mul_sum, mul_comm]
+    simp only [one_apply, ite_mul, one_mul, zero_mul, Finset.sum_ite_eq, mem_univ, reduceIte]
+    exact (sub_mul (card U : R) m ((ps k).act t)).symm
+
+lemma stateisStablecondition (ps : Fin m → (HopfieldNetwork R U).Pattern)
+  (s : (HopfieldNetwork R U).Pattern) c (hc : 0 < c)
+  (hw : ∀ u, ((Hebbian ps).w).mulVec s.act u = c * s.act u) : s.isStable (Hebbian ps) := by
+  intros u
+  unfold Up net out
+  simp only [reduceIte, Fin.isValue]
+  rw [HNfnet_eq]
+  simp_rw [mulVec, dotProduct] at hw u
+  refine ite_eq_iff.mpr ?_
+  cases' s.act_one_or_neg_one u with h1 h2
+  · left; rw [h1]; constructor
+    · rw [hw, le_iff_lt_or_eq]; left; rwa [h1, mul_one]
+    · rfl
+  · right; rw [h2]; constructor
+    · change ¬ 0 ≤ _
+      rw [le_iff_lt_or_eq]
+      simp only [Left.neg_pos_iff, zero_eq_neg, not_or, not_lt]
+      constructor
+      · rw [le_iff_lt_or_eq]; left;
+        simpa only [hw, h2, mul_neg, mul_one, Left.neg_neg_iff]
+      · simp_all only [List.length_nil, Nat.succ_eq_add_one,
+        Nat.reduceAdd, mul_neg, mul_one, Fin.isValue, zero_eq_neg]
+        exact ne_of_gt hc
+    · rfl
+  exact (Hebbian ps).hw u u fun a => a rfl
+
+lemma Hebbian_stable (hm : m < card U) (ps : Fin m → (HopfieldNetwork R U).Pattern) (j : Fin m)
+    (horth : ∀ {i j : Fin m} (_ : i ≠ j), dotProduct (ps i).act (ps j).act = 0):
+  isStable (Hebbian ps) (ps j) := by
+  unfold isStable
+  have := patterns_pairwise_orthogonal ps horth j
+  have hmn0 : 0 < (card U - m : R) := by
+    simpa only [sub_pos, Nat.cast_lt]
+  apply stateisStablecondition ps (ps j) (card U - m) hmn0
+  · intros u; rw [funext_iff] at this; exact this u

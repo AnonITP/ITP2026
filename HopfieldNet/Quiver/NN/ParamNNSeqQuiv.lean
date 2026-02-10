@@ -1,13 +1,7 @@
-import Mathlib.Combinatorics.Digraph.Basic
-import Mathlib.Data.Matrix.Basic
-import Mathlib.Data.Vector.Basic
 import Mathlib.Analysis.SpecialFunctions.Exp
-import HopfieldNet.Digraph.NN.Core
+import HopfieldNet.Quiver.NN.ParamNN
 
-namespace SequentialCase
-
-set_option linter.unusedSectionVars false
-set_option linter.unnecessarySimpa false
+namespace Sequential
 
 class HasActivations (R : Type) where
   relu : R → R
@@ -76,8 +70,8 @@ def SeqAdj {arch : SequentialArch} (u v : SeqNeuron arch) : Prop :=
   Converting the Sequential Architecture into a NeuralNetwork.
 -/
 def toNeuralNetwork (arch : SequentialArch) [HasActivations R] :
-    NeuralNetwork R (SeqNeuron arch) := {
-  Adj := SeqAdj
+    NeuralNetwork R (SeqNeuron arch) R := {
+  Hom u v := PLift (SeqAdj u v)
   Ui := { u | u.layerIdx.val = 0 }
   Uo := { u | u.layerIdx.val = arch.layer_widths.length - 1 }
   Uh := { u | u.layerIdx.val > 0 ∧ u.layerIdx.val < arch.layer_widths.length - 1 }
@@ -88,9 +82,7 @@ def toNeuralNetwork (arch : SequentialArch) [HasActivations R] :
     let layer0 : Fin arch.layer_widths.length := ⟨0, hlen⟩
     have h0width : 0 < arch.layer_widths.get layer0 := by
       have hw : arch.layer_widths.get layer0 > 0 :=
-        arch.h_pos_widths (arch.layer_widths.get layer0)
-          (by
-            simpa using (List.get_mem (l := arch.layer_widths) layer0))
+        arch.h_pos_widths (arch.layer_widths.get layer0) (by simp)
       simpa using hw
     let neuron0 : Fin (arch.layer_widths.get layer0) := ⟨0, h0width⟩
     refine Set.nonempty_iff_ne_empty'.mp ?_
@@ -102,14 +94,11 @@ def toNeuralNetwork (arch : SequentialArch) [HasActivations R] :
       | zero =>
           have : ¬ (0 ≥ 2) := by decide
           exact (this (by simpa [h] using arch.h_min_layers)).elim
-      | succ n =>
-          simpa [h] using Nat.lt_succ_self n
+      | succ n => simp
     let last_idx : Fin arch.layer_widths.length := ⟨arch.layer_widths.length - 1, hlast⟩
     have h0width : 0 < arch.layer_widths.get last_idx := by
       have hw : arch.layer_widths.get last_idx > 0 :=
-        arch.h_pos_widths (arch.layer_widths.get last_idx)
-          (by
-            simpa using (List.get_mem (l := arch.layer_widths) last_idx))
+        arch.h_pos_widths (arch.layer_widths.get last_idx) (by simp)
       simpa using hw
     let neuron0 : Fin (arch.layer_widths.get last_idx) := ⟨0, h0width⟩
     exact ⟨⟨last_idx, neuron0⟩, rfl⟩
@@ -131,7 +120,6 @@ def toNeuralNetwork (arch : SequentialArch) [HasActivations R] :
         let v : SeqNeuron arch := ⟨prev_idx, i⟩
         (w_row v) * (act_map v)
       )
-
       -- We use `simp [h]` to prove that since layer != 0, the param vector size is 1.
       dot_prod + (params.get ⟨0, by simp [h];⟩)
   fout := fun _ x => x
@@ -143,8 +131,10 @@ def toNeuralNetwork (arch : SequentialArch) [HasActivations R] :
       let act_label := arch.activations.get act_idx
       apply_act act_label x
   pact := fun _ => True
-  pw := fun _ => True
-  hpact := fun _ _ _ _ _ _ _ _ => trivial
+  pw := fun _ _ _ => True
+  hpact := fun _ _ _ _ _ _ _ _ _ => trivial
+  pm _ := True
+  m := fun _ => 0
 }
 
 variable {R : Type} [Semiring R] [DecidableEq R]
@@ -152,7 +142,7 @@ variable {R : Type} [Semiring R] [DecidableEq R]
 open NeuralNetwork
 
 /-- The specific Neural Network instance derived from a Sequential Architecture. -/
-abbrev SeqNet (arch : SequentialArch) [HasActivations R] : NeuralNetwork R (SeqNeuron arch) :=
+abbrev SeqNet (arch : SequentialArch) [HasActivations R] : NeuralNetwork R (SeqNeuron arch) R :=
   toNeuralNetwork (R := R) arch
 
 /-- A State for a sequential network is just a mapping from (Layer, Index) to a value. -/
@@ -200,13 +190,16 @@ def forwardPass (inputState : SeqState (R:=R) arch) (h_init : inputState.onlyUi)
   State.workPhase params inputState h_init (sequentialOrder arch)
 
 -- Helper 1: Topological property
+omit [DecidableEq R] in
 lemma pred_layer_lt (arch : SequentialArch) {u v : SeqNeuron arch}
-    (h : (SeqNet (R := R) arch).Adj u v) : v.layerIdx < u.layerIdx := by
-  unfold SeqNet toNeuralNetwork SeqAdj at h
-  have hv : v.layerIdx.val + 1 = u.layerIdx.val := by simpa using h
+    (h : (SeqNet (R := R) arch).Hom u v) : v.layerIdx < u.layerIdx := by
+  unfold SeqNet toNeuralNetwork at h
+  have hv : v.layerIdx.val + 1 = u.layerIdx.val := by
+    simpa [SeqAdj] using h.down
   exact Fin.lt_def.2 (by omega)
 
 -- Helper 2: Input neurons are stable
+omit [DecidableEq R] in
 lemma input_is_stable (arch : SequentialArch)
   (params : SeqParams (R := R) arch) (s : SeqState (R := R) arch)
   (u : SeqNeuron arch) (hu : u.layerIdx.val = 0) :
@@ -225,7 +218,8 @@ instance : HasActivations ℚ where
 -- Architecture: [2, 2, 1]
 def exArch : SequentialArch := {
   layer_widths := [2, 2, 1]
-  activations  := [.Linear, .ReLU, .Linear] -- Input is Identity, Hidden is ReLU, Output is Linear
+  activations  := [.Linear, .ReLU, .Linear]
+  -- Input is Identity, Hidden is ReLU, Output is Linear
   h_len_eq     := rfl
   h_min_layers := by decide
   h_pos_widths := by decide
@@ -277,11 +271,17 @@ def exParams : SeqParams (R:=ℚ) exArch := {
 
   -- D. Proofs
   hw := by
-    intro u v h
+    intro u v h1
+    classical
     have h' : ¬ (v.layerIdx.val + 1 = u.layerIdx.val) := by
-      simpa [SeqNet, toNeuralNetwork, SeqAdj] using h
+      intro hv
+      apply h1
+      simpa [SeqNet, toNeuralNetwork, SeqAdj] using (hv)
     simp [h']
   hw' := trivial
+  h_arrows := by
+    intro u v
+    simp [toNeuralNetwork, SeqAdj]
 }
 
 -- 4. Define Initial State (Input)
@@ -298,6 +298,7 @@ def exInputState : SeqState (R := ℚ) exArch := {
 
 -- Proof that only inputs are set
 lemma exOnlyUi : exInputState.onlyUi := by
+  constructor
   intro u hu
   -- If u is not in Layer 0, exInputState returns 0.
   simp [toNeuralNetwork] at hu
@@ -310,8 +311,10 @@ lemma exOnlyUi : exInputState.onlyUi := by
         exfalso
         exact hl (by simpa using h)
     | succ k =>
+
         -- Since layerIdx ≠ 0, the match falls through to the default case.
         simp [exInputState, h]
+        aesop
 
 -- This prints the state layer-by-layer
 def showState (s : SeqState (R := ℚ) exArch) : String :=
@@ -328,12 +331,4 @@ def finalState : SeqState (R := ℚ) exArch :=
 
 #eval showState finalState
 
-  -- THEOREM: Generalization of Sequential Models
-  -- For any Neural Network that satisfies the 'sequential architecture' constraints (Isabelle model),
-  -- executing your asynchronous 'workPhase' along the topological sort
-  -- yields the EXACT SAME result as the sequential matrix-style inference.
-  -- Significance: This proves the Isabelle model is a strict subset of the NNquiv model.
--- ...existing code...
-
-
-end SequentialCase
+end Sequential

@@ -238,9 +238,10 @@ lemma flip_prob_neg_pos
     ext v; by_cases hv : v = u
     ·
       subst hv; simp [updPos_act_at_u, h_pos]
+
       -- dsimp [updPos, updNeg]
       -- simp only [Function.update_self]
-      -- aesop
+      -- -- aesop
     · dsimp [updPos, updNeg]
       grind
       --simp [updPos_act_noteq (NN := NN) s u v hv, h_off v hv]
@@ -275,7 +276,7 @@ lemma flip_prob_neg_pos
     ext v; by_cases hv : v = u
     · subst hv; simp [updNeg_act_at_u, h_neg]
       -- dsimp [updPos, updNeg]
-      -- simp only [Function.update_self]
+      --simp only [Function.update_self]
     · dsimp [updPos, updNeg]
       grind
       --simp [updNeg_act_noteq (NN := NN) s' u v hv, h_off v hv]

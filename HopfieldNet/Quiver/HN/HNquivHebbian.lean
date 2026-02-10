@@ -93,23 +93,26 @@ lemma stateisStablecondition (ps : Fin m → (HopfieldNetwork R U).State)
   (s : (HopfieldNetwork R U).State) c (hc : 0 < c)
   (hw : ∀ u, ((Hebbian ps).w).mulVec s.act u = c * s.act u) : s.isStable (Hebbian ps) := by
   intros u
-  unfold Up out
+  unfold Up net out
   simp only [reduceIte, Fin.isValue]
   rw [HNfnet_eq]
   simp_rw [mulVec, dotProduct] at hw u
   refine ite_eq_iff.mpr ?_
   cases' s.act_one_or_neg_one u with h1 h2
-  · left; rw [h1]; refine ⟨?_, rfl⟩
+  · left; rw [h1]; constructor
     · rw [hw, le_iff_lt_or_eq]; left; rwa [h1, mul_one]
-  · right; rw [h2]; refine ⟨?_, ?_⟩
+    · rfl
+  · right; rw [h2]; constructor
     · change ¬ 0 ≤ _
       rw [le_iff_lt_or_eq]
       simp only [not_or, not_lt]
-      refine ⟨?_, ?_⟩
-      · rw [le_iff_lt_or_eq]; left; simpa only [hw, h2, mul_neg, mul_one, Left.neg_neg_iff]
-      · simp_all only [mul_neg, mul_one, zero_eq_neg]; exact ne_of_gt hc
+      constructor
+      · rw [le_iff_lt_or_eq]; left;
+        simpa only [hw, h2, mul_neg, mul_one, Left.neg_neg_iff]
+      · simp_all only [mul_neg, mul_one, zero_eq_neg]
+        exact ne_of_gt hc
     · rfl
-  exact (Hebbian ps).hw u u fun a ↦ by aesop
+  exact (Hebbian ps).hw u u fun a => by simp at a
 
 lemma hebbian_stable_orthogonal (hm : m < card U) (ps : Fin m → (HopfieldNetwork R U).State)
     (j : Fin m) (horth : ∀ {i j : Fin m} (_ : i ≠ j), dotProduct (ps i).act (ps j).act = 0):

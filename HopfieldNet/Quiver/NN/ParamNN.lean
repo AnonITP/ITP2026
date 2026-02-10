@@ -1,54 +1,14 @@
 import Mathlib.Combinatorics.Quiver.Basic
 import Mathlib.Data.Finset.Basic
-import Mathlib.Combinatorics.Digraph.Basic
 import Mathlib.Analysis.Normed.Field.Lemmas
 import Mathlib.LinearAlgebra.Matrix.Defs
 import Mathlib.Data.List.Pairwise
 
-open Mathlib
+open Finset Mathlib
 
-universe u v u₁ u₂
+universe uR uU uσ v
 
-structure NeuralNetwork' (R : Type uR) (U : Type uU) (σ : Type uσ) [Zero R] extends Digraph U where
-  /-- Input neurons. -/
-  (Ui Uo Uh : Set U)
-  /-- There is at least one input neuron. -/
-  (hUi : Ui ≠ ∅)
-  /-- There is at least one output neuron. -/
-  (hUo : Uo ≠ ∅)
-  /-- All neurons are either input, output, or hidden. -/
-  (hU : Set.univ = (Ui ∪ Uo ∪ Uh))
-  /-- Hidden neurons are not input or output neurons. -/
-  (hhio : Uh ∩ (Ui ∪ Uo) = ∅)
-  /-- Dimensions of input vectors for each neuron. -/
-  (κ1 κ2 : U → ℕ)
-  /-- Computes the net input to a neuron. -/
-  (fnet : ∀ u : U, (U → R) → (U → R) → Vector R (κ1 u) → R)
-  /-- Computes the activation of a neuron (polymorphic σ). -/
-  (fact : ∀ u : U, σ → R → Vector R (κ2 u) → σ) -- current σ, net input, params → σ
-  /-- Converts an activation value to a numeric output for computation. -/
-  (fout : ∀ _ : U, σ → R)
-  /-- Optional helper map σ → R (can be same as fout u if independent of u). -/
-  (m : σ → R)
-  /-- Predicate on activations (in σ). -/
-  (pact : σ → Prop)
-  /-- Predicate on weight matrices. -/
-  (pw : Matrix U U R → Prop)
-  /-- If all activations satisfy `pact`, then the next activations computed by `fact`
-  also satisfy `pact`. -/
-  (hpact :
-    ∀ (w : Matrix U U R)
-      (_ : ∀ u v, ¬ Adj u v → w u v = 0) (_ : pw w)
-      (σv : (u : U) → Vector R (κ1 u))
-      (θ : (u : U) → Vector R (κ2 u))
-      (current : U → σ),
-      (∀ u_idx : U, pact (current u_idx)) →
-      ∀ u_target : U,
-        pact (fact u_target (current u_target)
-                (fnet u_target (w u_target) (fun v => fout v (current v)) (σv u_target))
-                (θ u_target)))
-
-structure NeuralNetwork (R : Type u₁) (U : Type u) (σ : Type u₂) [Zero R] extends Quiver.{v,u} U where
+structure NeuralNetwork' (R U : Type u) [Zero R] extends Quiver.{v,u} U where
   (Ui Uo Uh : Set U)
   (hUi : Ui ≠ ∅)
   (hUo : Uo ≠ ∅)
@@ -56,35 +16,59 @@ structure NeuralNetwork (R : Type u₁) (U : Type u) (σ : Type u₂) [Zero R] e
   (hhio : Uh ∩ (Ui ∪ Uo) = ∅)
   (κ1 κ2 : U → ℕ)
   (fnet : ∀ u : U, (U → R) → (U → R) → Vector R (κ1 u) → R)
-  --(fact : ∀ u : U, R → R → Vector R (κ2 u) → R)
-  (fact : ∀ u : U, σ → R → Vector R (κ2 u) → σ)
-  (fout : ∀ _ : U, σ → R)
-
-  (pact : σ → Prop)
-    /-- Optional helper map σ → R (can be same as fout u if independent of u). -/
-  (m : σ → R)
-
+    /-- Computes the activation of a node. -/
+  (fact : ∀ u : U, R → Vector R (κ2 u) → R)
+  (fout : ∀ _ : U, R → R)
+  (pact : R → Prop)
   (pw : ∀ (u v : U), (u ⟶ v) → Prop)
   -- /-- The adjacency matrix induced by `pw`: entry `(u,v)` holds iff there exists an arrow `u ⟶ v`
   -- satisfying `pw`. -/
   (pwMat : Matrix U U Prop := fun u v => ∃ f : (u ⟶ v), pw u v f)
-  /-- Predicate on Matrix: Defines valid weights (e.g., "weights must be between -1 and 1"). -/
+  /-- NEW: Predicate on Matrix: Defines valid weights (e.g., "weights must be between -1 and 1"). -/
+  (pm : Matrix U U R → Prop)
+    /-- If all activations satisfy `pact`, then the activations computed by `fact` also satisfy `pact`. -/
+  (hpact : ∀ (w : Matrix U U R) (_ : ∀ (u v : U), ¬pwMat u v → w u v = 0)
+   (_ : ∀ u v (f : Hom u v), pw u v f)
+   (_ : pm w)
+   (σ : (u : U) → Vector R (κ1 u))
+   (θ : (u : U) → Vector R (κ2 u))
+   (act : U → R),
+  (∀ u : U, pact (act u)) → (∀ u : U, pact (fact u (fnet u (w u)
+    (fun v => fout v (act v)) (σ u)) (θ u))))
+
+structure NeuralNetwork (R : Type uR) (U : Type uU) (σ : Type uσ) [Zero R] extends Quiver.{v, uU} U where
+  (Ui Uo Uh : Set U)
+  -- ... (Set constraints hUi, hUo, hU, hhio) ...
+  (hUi : Ui ≠ ∅)
+  (hUo : Uo ≠ ∅)
+  (hU : Set.univ = (Ui ∪ Uo ∪ Uh))
+  (hhio : Uh ∩ (Ui ∪ Uo) = ∅)
+  (κ1 κ2 : U → ℕ)
+  /-- fnet: Takes weights (as a function of arrows) and neighbor outputs -/
+  (fnet : ∀ u : U, (U → R) → (U → R) → Vector R (κ1 u) → R)
+  (fact : ∀ u : U, σ → R → Vector R (κ2 u) → σ)
+  (fout : ∀ _ : U, σ → R)
+  (pact : σ → Prop)
+  (pw : ∀ (u v : U), (u ⟶ v) → Prop) -- Predicate on the collection of all weights
+    -- /-- The adjacency matrix induced by `pw`: entry `(u,v)` holds iff there exists an arrow `u ⟶ v`
+  -- satisfying `pw`. -/
+    /-- Optional helper map σ → R (can be same as fout u if independent of u). -/
+  (m : σ → R)
+  (pwMat : Matrix U U Prop := fun u v => ∃ f : (u ⟶ v), pw u v f)
   (pm : Matrix U U R → Prop)
   (hpact : ∀
+    (w : Matrix U U R)
+    (_ : ∀ (u v : U), ¬pwMat u v → w u v = 0)
+    (_ : ∀ u v (f : Hom u v), pw u v f)
+    (_ : pm w)
+    (σ₁ : (u : U) → Vector R (κ1 u))
+    (θ : (u : U) → Vector R (κ2 u))
+    (current_neuron_activations : U → σ),
+    (∀ u_idx : U, pact (current_neuron_activations u_idx)) → -- Precondition on all current activations
+    (∀ u_target : U, pact (fact u_target (current_neuron_activations u_target) -- Pass current_act of target neuron
+    (fnet u_target (w u_target) (fun v => fout v (current_neuron_activations v)) (σ₁ u_target))
+    (θ u_target))))
 
-  (w : Matrix U U R)
-  (_ : ∀ (u v : U), ¬pwMat u v → w u v = 0)
-  (_ : ∀ u v (f : Hom u v), pw u v f)
-  (_ : pm w)
-
-  (σv : (u : U) → Vector R (κ1 u))
-  (θ : (u : U) → Vector R (κ2 u))
-
-  (current_neuron_activations : U → σ),
-  (∀ u_idx : U, pact (current_neuron_activations u_idx)) → -- Precondition on all current activations
-  (∀ u_target : U, pact (fact u_target (current_neuron_activations u_target) -- Pass current_act of target neuron
-                               (fnet u_target (w u_target) (fun v => fout v (current_neuron_activations v)) (σv u_target))
-                               (θ u_target))))
 
 variable {R U σ : Type} [Zero R]
 
@@ -115,7 +99,7 @@ structure State (NN : NeuralNetwork R U σ) where
 
 /-- Extensionality lemma for neural network states -/
 @[ext]
-lemma ext {R U σ : Type} [Zero R] {NN : NeuralNetwork R U σ}
+lemma ext {R U : Type} [Zero R] {NN : NeuralNetwork R U σ}
     {s₁ s₂ : NN.State} : (∀ u, s₁.act u = s₂.act u) → s₁ = s₂ := by
   intro h
   cases s₁
@@ -130,7 +114,7 @@ variable {NN : NeuralNetwork R U σ} (wσθ : Params NN) (s : NN.State)
 
 def out (u : U) : R := NN.fout u (s.act u)
 def net (u : U) : R := NN.fnet u (wσθ.w u) (fun v => s.out v) (wσθ.σ u)
-def onlyUi : Prop := ∃ σ0 : σ, ∀ u : U, ¬ u ∈ NN.Ui → s.act u = σ0
+def onlyUi : Prop := ∃ σ0 : σ, ∀ u : U, u ∉ NN.Ui → s.act u = σ0
 
 variable [DecidableEq U]
 

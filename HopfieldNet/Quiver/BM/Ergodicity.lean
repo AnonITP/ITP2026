@@ -1,13 +1,14 @@
 import MCMC.PF.LinearAlgebra.Matrix.PerronFrobenius.Stochastic
 import MCMC.Finite.Core
 import MCMC.Finite.toKernel
-import HopfieldNet.DetailedBalanceBM
+import HopfieldNet.Quiver.BM.DetailedBalanceBM
 
 set_option linter.unusedSectionVars false
 set_option linter.unusedSimpArgs false
 set_option linter.style.longLine false
 set_option linter.style.commandStart false
 set_option linter.style.openClassical false
+set_option linter.unnecessarySimpa false
 
 /-!
 # Ergodicity of the Random–Scan Gibbs Kernel via Perron–Frobenius
@@ -172,7 +173,7 @@ lemma RScol_colsum_one :
     -- Use q.toMeasure on both sides
     have h_singleton : ∀ s : NN.State, q.toMeasure {s} = q s := by
       intro s
-      simpa using (PMF.toMeasure_singleton (p:=q) s)
+      simp [(PMF.toMeasure_singleton (p:=q) s)]
     have hsum_q : ∑ s, q s = (1 : ℝ≥0∞) := by
       simpa [tsum_fintype] using q.tsum_coe
     have h1' :
@@ -182,7 +183,7 @@ lemma RScol_colsum_one :
             = ∑ s, q s := by
               refine Finset.sum_congr rfl ?_
               intro s _
-              simpa using (h_singleton s)
+              simp [(PMF.toMeasure_singleton (p:=q) s)]
         _ = (1 : ℝ≥0∞) := hsum_q
         _ = q.toMeasure Set.univ := by simp
     -- now replace κ with q.toMeasure on both sides
@@ -924,7 +925,7 @@ private lemma measure_eq_sum_singletons (m : Measure NN.State) (S : Set NN.State
     exact Set.disjoint_singleton.2 hab
   simpa [F, hU] using
     (measure_biUnion_finset (μ := m) (s := F)
-      (f := fun s : NN.State => ({s} : Set NN.State)) hdisj (by intro s hs; simp))
+      (f := fun s : NN.State => ({s} : Set NN.State)) hdisj (_))
 
 /-- The Boltzmann probability **vector** (entries are `toReal` of singleton masses). -/
 noncomputable def πBoltzVec : stdSimplex ℝ NN.State :=
@@ -949,7 +950,7 @@ noncomputable def πBoltzVec : stdSimplex ℝ NN.State :=
             (f := fun s : NN.State => μBoltz (NN:=NN) (spec:=spec) (p:=p) (T:=T) {s})
             (by intro s hs; exact hfin s)).symm
       have huniv : μBoltz (NN:=NN) (spec:=spec) (p:=p) (T:=T) (Set.univ : Set NN.State) = 1 := by
-        simpa using (measure_univ : μBoltz (NN:=NN) (spec:=spec) (p:=p) (T:=T) Set.univ = 1)
+        simp [(measure_univ : μBoltz (NN:=NN) (spec:=spec) (p:=p) (T:=T) Set.univ = 1)]
       have huniv_sum := μBoltz_univ_eq_sum_singletons (NN:=NN) (spec:=spec) (p:=p) (T:=T)
       calc
         Finset.sum Finset.univ (fun s : NN.State =>
@@ -959,8 +960,8 @@ noncomputable def πBoltzVec : stdSimplex ℝ NN.State :=
             μBoltz (NN:=NN) (spec:=spec) (p:=p) (T:=T) {s})).toReal := hsum_toReal
         _ =
           (μBoltz (NN:=NN) (spec:=spec) (p:=p) (T:=T) (Set.univ : Set NN.State)).toReal := by
-            simpa [huniv_sum]
-        _ = 1 := by simpa [huniv]
+            simp [huniv_sum]
+        _ = 1 := by simp [huniv]
 }
 
 private lemma vecToMeasure_singleton (s : NN.State) :
@@ -1013,7 +1014,7 @@ private lemma vecToMeasure_eq_μBoltz :
             simpa using (vecToMeasure_singleton (NN:=NN) (spec:=spec) (p:=p) (T:=T) s)
     _ = ENNReal.ofReal ((μBoltz (NN:=NN) (spec:=spec) (p:=p) (T:=T) {s}).toReal) := rfl
     _ = (μBoltz (NN:=NN) (spec:=spec) (p:=p) (T:=T)) {s} := by
-            simpa [ENNReal.ofReal_toReal, μBoltz_singleton_ne_top (NN:=NN) (spec:=spec) (p:=p) (T:=T) s]
+            simp [ENNReal.ofReal_toReal, μBoltz_singleton_ne_top (NN:=NN) (spec:=spec) (p:=p) (T:=T) s]
 
 private lemma matrixToKernel_singleton
     {P : Matrix NN.State NN.State ℝ} (hP : MCMC.Finite.IsStochastic P) (i j : NN.State) :

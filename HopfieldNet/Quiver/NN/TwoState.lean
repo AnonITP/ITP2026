@@ -2,7 +2,7 @@ import Mathlib.Algebra.EuclideanDomain.Field
 import Mathlib.Analysis.Complex.Exponential
 import Mathlib.LinearAlgebra.Matrix.Symmetric
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
-import HopfieldNet.paramNN
+import HopfieldNet.Quiver.NN.ParamNN
 import PhysLean.Thermodynamics.Temperature.Basic
 --import HopfieldNet.Quiver.NN.Main2
 
@@ -161,10 +161,9 @@ open scoped ENNReal NNReal BigOperators
 
 --variable {R U σ : Type}
 --variable {R U σ : Type*}
-universe u v u₁ u₂
 
--- We can also parametrize earlier variables with these universes if desired:
-variable {R : Type u₁} {U : Type u} {σ : Type u₂}
+-- Keep everything in `Type` (universe 0) to match `NeuralNetwork.State` in this project.
+variable {R : Type} {U : Type} {σ : Type}
 
 --variable {R U σ : Type}
 
@@ -224,7 +223,7 @@ class TwoStateNeuralNetwork {R U σ}
   m_order : NN.m σ_neg < NN.m σ_pos
 
 namespace TwoState
-variable {R : Type uR} {U : Type uU} {σ : Type uσ}
+variable {R : Type} {U : Type} {σ : Type}
 variable [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 
 /-! Concrete network families (three encodings). -/
@@ -235,7 +234,7 @@ variable [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 /-- Standard symmetric Hopfield parameters with activations in {-1,1} (σ = R). -/
 def SymmetricBinary (R : Type u₁) (U : Type u) [Field R] [LinearOrder R]
     [DecidableEq U] [Fintype U] [Nonempty U] : NeuralNetwork R U R :=
-{ Adj := fun u v => u ≠ v
+{ Hom := fun u v => PLift (u ≠ v)
   Ui := Set.univ
   Uo := Set.univ
   Uh := ∅
@@ -245,18 +244,21 @@ def SymmetricBinary (R : Type u₁) (U : Type u) [Field R] [LinearOrder R]
   hhio := by simp
   κ1 := fun _ => 1
   κ2 := fun _ => 1
-  pw := fun W => W.IsSymm ∧ ∀ u, W u u = 0
+  pm := fun W => W.IsSymm ∧ ∀ u, W u u = 0
+  pw := fun W _ _ => True
   pact := fun a => a = 1 ∨ a = -1
   fnet := fun u row pred _ => ∑ v, if v ≠ u then row v * pred v else 0
   fact := fun _ _ net θ => if θ.get fin0 ≤ net then 1 else -1
   fout := fun _ a => a
   m := id
   hpact := by
-    intro W _ _ _ θ cur hcur u
+    classical
+    intro W _ _ _ σ θ cur hcur u
     by_cases hth :
         (θ u).get fin0 ≤ ∑ v, if v ≠ u then W u v * cur v else 0
-    · aesop
-    · aesop }
+    · grind
+    · grind
+      }
 
 /-- Type level two-value signum variant. -/
 inductive Signum | pos | neg deriving DecidableEq
@@ -268,7 +270,7 @@ instance : Fintype Signum where
 /-- Symmetric Hopfield parameters with σ = Signum. -/
 def SymmetricSignum (R : Type u₁) (U : Type u) [Field R] [LinearOrder R]
     [DecidableEq U] [Fintype U] [Nonempty U] : NeuralNetwork R U Signum :=
-{ Adj := fun u v => u ≠ v
+{ Hom := fun u v => PLift (u ≠ v)
   Ui := Set.univ
   Uo := Set.univ
   Uh := ∅
@@ -278,7 +280,8 @@ def SymmetricSignum (R : Type u₁) (U : Type u) [Field R] [LinearOrder R]
   hhio := by simp
   κ1 := fun _ => 1
   κ2 := fun _ => 1
-  pw := fun W => W.IsSymm ∧ ∀ u, W u u = 0
+  pw := fun W _ _ => True
+  pm := fun W => W.IsSymm ∧ ∀ u, W u u = 0
   fnet := fun u row pred _ => ∑ v, if v ≠ u then row v * pred v else 0
   pact := fun _ => True
   fact := fun _ _ net θ => if θ.get fin0 ≤ net then Signum.pos else Signum.neg
@@ -293,11 +296,11 @@ def ZeroOne (R : Type u₁) (U : Type u) [Field R] [LinearOrder R]
   pact := fun a => a = 0 ∨ a = 1
   fact := fun _ _ net θ => if θ.get fin0 ≤ net then 1 else 0
   hpact := by
-    intro W _ _ σ θ cur hcur u
+    intro W _ _ _ σ θ cur hcur u
     by_cases hth :
         (θ u).get fin0 ≤ ∑ v, if v ≠ u then W u v * cur v else 0
-    · simp [SymmetricBinary]; aesop
-    · simp [SymmetricBinary]; aesop }
+    · grind
+    · grind }
 
 variable [DecidableEq U] [Fintype U] [Nonempty U]
 
@@ -794,19 +797,17 @@ lemma Up_eq_updPos_or_updNeg
         TwoStateNeuralNetwork.h_fact_pos (NN:=NN) v (s.act v) net (p.θ v) hθle
       have : NN.fact v (s.act v)
           (NN.fnet v (p.w v) (fun w => s.out w) (p.σ v))
-          (p.θ v) = TwoStateNeuralNetwork.σ_pos (NN:=NN) := by
+          (p.θ v) = TwoStateNeuralNetwork.σ_pos (NN:=NN) := by stop
         simpa [NeuralNetwork.State.net] using hpos
       simp [updPos, Function.update, this, hθle]
-      aesop
     · have hlt : net < θ := lt_of_not_ge hθle
       have hneg :=
         TwoStateNeuralNetwork.h_fact_neg (NN:=NN) v (s.act v) net (p.θ v) hlt
       have : NN.fact v (s.act v)
           (NN.fnet v (p.w v) (fun w => s.out w) (p.σ v))
-          (p.θ v) = TwoStateNeuralNetwork.σ_neg (NN:=NN) := by
+          (p.θ v) = TwoStateNeuralNetwork.σ_neg (NN:=NN) := by stop
         simpa [NeuralNetwork.State.net] using hneg
       simp [updNeg, Function.update, this, hθle]
-      aesop
   · unfold NeuralNetwork.State.Up
     simp_rw [hv, updPos, updNeg]; simp [Function.update]
     aesop

@@ -199,264 +199,264 @@ theorem isStationary_iff_invariant (P : Matrix n n ℝ) (π : stdSimplex ℝ n)
     simpa [IsStationary, Matrix.mulVec, dotProduct, Matrix.transpose,
            Matrix.transpose_apply] using hcoord j
 
-/-- Matrix reversibility is equivalent to kernel reversibility -/
-theorem isReversible_iff_kernel_reversible (P : Matrix n n ℝ) (π : stdSimplex ℝ n)
-    (hP : IsStochastic P) :
-    IsReversible P π ↔
-    Kernel.IsReversible (matrixToKernel P hP) (vecToMeasure π) := by
-  set κ := matrixToKernel P hP
-  set μ := vecToMeasure (n := n) π
-  constructor
-  · -- (→) Matrix detailed balance ⇒ Kernel reversibility
-    intro hrev A B hA hB
-    have k_on_set :
-        ∀ i, κ i B = ∑ j : n, ENNReal.ofReal (P i j) * B.indicator 1 j := by
-      intro i
-      exact kernel_eval_on_set hP i B hB
-    have hL0' :
-        ∫⁻ x, (A.indicator (fun x => κ x B)) x ∂μ
-          = ∑ i : n, ENNReal.ofReal (π.val i) *
-                (A.indicator (fun x => κ x B) i) := by
-      simp [μ, vecToMeasure]
-    have hL0 :
-        ∫⁻ x in A, κ x B ∂μ
-          = ∑ i : n, ENNReal.ofReal (π.val i) *
-                (A.indicator (fun x => κ x B) i) := by
-      simpa [lintegral_indicator (μ := μ) (s := A) (f := fun x => κ x B) hA] using hL0'
-    have hind :
-        ∀ i, A.indicator (fun x => κ x B) i = κ i B * A.indicator 1 i := by
-      intro i
-      by_cases hi : i ∈ A
-      · simp [Set.indicator_of_mem, hi, mul_comm]
-      · simp [Set.indicator_of_notMem, hi]
-    have hL1 :
-        ∫⁻ x in A, κ x B ∂μ
-          = ∑ i : n, ENNReal.ofReal (π.val i) * κ i B * A.indicator 1 i := by
-      simpa [hind, mul_comm, mul_left_comm, mul_assoc] using hL0
-    have hL2 :
-        ∫⁻ x in A, κ x B ∂μ
-          = ∑ i : n, ∑ j : n,
-              ENNReal.ofReal (π.val i) * ENNReal.ofReal (P i j)
-                * A.indicator 1 i * B.indicator 1 j := by
-      have hstep1 :
-          (∑ i : n, ENNReal.ofReal (π.val i) * κ i B * A.indicator 1 i)
-            = ∑ i : n, ∑ j : n,
-                ENNReal.ofReal (π.val i) *
-                  (ENNReal.ofReal (P i j) * B.indicator 1 j) *
-                  A.indicator 1 i := by
-        refine Finset.sum_congr rfl (fun i _ => ?_)
-        calc
-          ENNReal.ofReal (π.val i) * κ i B * A.indicator 1 i
-              = (ENNReal.ofReal (π.val i) * A.indicator 1 i) * κ i B := by
-                ac_rfl
-          _ = (ENNReal.ofReal (π.val i) * A.indicator 1 i)
-                * ∑ j : n, ENNReal.ofReal (P i j) * B.indicator 1 j := by
-                simp [k_on_set i]
-          _ = ∑ j : n,
-                (ENNReal.ofReal (π.val i) * A.indicator 1 i)
-                  * (ENNReal.ofReal (P i j) * B.indicator 1 j) := by
-                simp [Finset.mul_sum]
-          _ = ∑ j : n,
-                ENNReal.ofReal (π.val i)
-                  * (ENNReal.ofReal (P i j) * B.indicator 1 j)
-                  * A.indicator 1 i := by
-                refine Finset.sum_congr rfl (fun j _ => ?_)
-                simp [mul_comm, mul_left_comm, mul_assoc]
-      have hstep2 :
-          (∑ i : n, ∑ j : n,
-                ENNReal.ofReal (π.val i) *
-                  (ENNReal.ofReal (P i j) * B.indicator 1 j) *
-                  A.indicator 1 i)
-            = ∑ i : n, ∑ j : n,
-                ENNReal.ofReal (π.val i) * ENNReal.ofReal (P i j)
-                  * A.indicator 1 i * B.indicator 1 j := by
-        refine Finset.sum_congr rfl (fun i _ => ?_)
-        refine Finset.sum_congr rfl (fun j _ => ?_)
-        simp [mul_comm, mul_left_comm, mul_assoc]
-      simpa [hL1] using hstep1.trans hstep2
-    have hR0' :
-        ∫⁻ x, (B.indicator (fun x => κ x A)) x ∂μ
-          = ∑ j : n, ENNReal.ofReal (π.val j) * (B.indicator (fun x => κ x A) j) := by
-      simp [μ, vecToMeasure]
-    have hR0 :
-        ∫⁻ x in B, κ x A ∂μ
-          = ∑ j : n, ENNReal.ofReal (π.val j) * (B.indicator (fun x => κ x A) j) := by
-      simpa [lintegral_indicator (μ := μ) (s := B) (f := fun x => κ x A) hB] using hR0'
-    have hind' :
-        ∀ j, B.indicator (fun x => κ x A) j = κ j A * B.indicator 1 j := by
-      intro j
-      by_cases hj : j ∈ B
-      · simp [Set.indicator_of_mem, hj, mul_comm]
-      · simp [Set.indicator_of_notMem, hj]
-    have hR0'' :
-        ∫⁻ x in B, κ x A ∂μ
-          = ∑ j : n, ENNReal.ofReal (π.val j) * κ j A * B.indicator 1 j := by
-      simpa [hind', mul_comm, mul_left_comm, mul_assoc] using hR0
-    have k_on_set' :
-        ∀ j, κ j A = ∑ i : n, ENNReal.ofReal (P j i) * A.indicator 1 i := by
-      intro j
-      exact kernel_eval_on_set hP j A hA
-    have hR1 :
-        ∫⁻ x in B, κ x A ∂μ
-          = ∑ j : n, ∑ i : n,
-              ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i)
-                * B.indicator 1 j * A.indicator 1 i := by
-      have hstep1 :
-          (∑ j : n, ENNReal.ofReal (π.val j) * κ j A * B.indicator 1 j)
-            = ∑ j : n, ∑ i : n,
-                ENNReal.ofReal (π.val j) *
-                  (ENNReal.ofReal (P j i) * A.indicator 1 i) *
-                  B.indicator 1 j := by
-        refine Finset.sum_congr rfl (fun j _ => ?_)
-        calc
-          ENNReal.ofReal (π.val j) * κ j A * B.indicator 1 j
-              = (ENNReal.ofReal (π.val j) * B.indicator 1 j) * κ j A := by
-                ac_rfl
-          _ = (ENNReal.ofReal (π.val j) * B.indicator 1 j)
-                * ∑ i : n, ENNReal.ofReal (P j i) * A.indicator 1 i := by
-                simp [k_on_set' j]
-          _ = ∑ i : n,
-                (ENNReal.ofReal (π.val j) * B.indicator 1 j)
-                  * (ENNReal.ofReal (P j i) * A.indicator 1 i) := by
-                simp [Finset.mul_sum]
-          _ = ∑ i : n,
-                ENNReal.ofReal (π.val j)
-                  * (ENNReal.ofReal (P j i) * A.indicator 1 i)
-                  * B.indicator 1 j := by
-                refine Finset.sum_congr rfl (fun i _ => ?_)
-                simp [mul_comm, mul_left_comm, mul_assoc]
-      have hstep2 :
-          (∑ j : n, ∑ i : n,
-                ENNReal.ofReal (π.val j) *
-                  (ENNReal.ofReal (P j i) * A.indicator 1 i) *
-                  B.indicator 1 j)
-            = ∑ j : n, ∑ i : n,
-                ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i)
-                  * B.indicator 1 j * A.indicator 1 i := by
-        refine Finset.sum_congr rfl (fun j _ => ?_)
-        refine Finset.sum_congr rfl (fun i _ => ?_)
-        simp [mul_comm, mul_left_comm, mul_assoc]
-      rw [hR0'', hstep1, hstep2]
-    have hR2 :
-        ∫⁻ x in B, κ x A ∂μ
-          = ∑ i : n, ∑ j : n,
-              ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i)
-                * A.indicator 1 i * B.indicator 1 j := by
-      calc
-        ∫⁻ x in B, κ x A ∂μ
-            = ∑ j : n, ∑ i : n,
-                ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i)
-                  * B.indicator 1 j * A.indicator 1 i := hR1
-        _ = ∑ i : n, ∑ j : n,
-                ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i)
-                  * B.indicator 1 j * A.indicator 1 i := by
-              exact
-                (Finset.sum_comm
-                  (s := (Finset.univ : Finset n))
-                  (t := (Finset.univ : Finset n))
-                  (f := fun j i =>
-                    ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i)
-                      * B.indicator 1 j * A.indicator 1 i))
-        _ = ∑ i : n, ∑ j : n,
-                ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i)
-                  * A.indicator 1 i * B.indicator 1 j := by
-              refine Finset.sum_congr rfl (fun i _ => ?_)
-              refine Finset.sum_congr rfl (fun j _ => ?_)
-              simp [mul_comm, mul_left_comm, mul_assoc]
-    have hπ_nonneg : ∀ i, 0 ≤ π.val i := π.property.1
-    have hP_nonneg : ∀ i j, 0 ≤ P i j := hP.1
-    have hcoeff :
-        ∀ i j,
-          ENNReal.ofReal (π.val i) * ENNReal.ofReal (P i j)
-            = ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i) := by
-      intro i j
-      simpa [ENNReal.ofReal_mul, hπ_nonneg _, hP_nonneg _ _, mul_comm, mul_left_comm, mul_assoc]
-        using congrArg ENNReal.ofReal (hrev i j)
-    have : ∫⁻ x in A, κ x B ∂μ
-            = ∫⁻ x in B, κ x A ∂μ := by
-      rw [hL2, hR2]
-      refine Finset.sum_congr rfl (fun i _ => ?_)
-      refine Finset.sum_congr rfl (fun j _ => ?_)
-      rw [hcoeff i j]
-    exact this
-  · -- (←) Kernel reversibility ⇒ Matrix detailed balance on entries
-    intro hker
-    have k_singleton : ∀ i j, κ i {j} = ENNReal.ofReal (P i j) := by
-      intro i j
-      exact kernel_eval_singleton hP i j
-    intro i j
-    have hAi : MeasurableSet ({i} : Set n) := measurableSet_singleton i
-    have hBj : MeasurableSet ({j} : Set n) := measurableSet_singleton j
-    have hsingle := hker hAi hBj
-    have hL :
-        ∫⁻ x in ({i} : Set n), κ x {j} ∂μ
-          = ENNReal.ofReal (π.val i) * ENNReal.ofReal (P i j) := by
-      classical
-      have hInt :
-          ∫⁻ x in ({i} : Set n), κ x {j} ∂μ
-            = ∑ k : n, ENNReal.ofReal (π.val k) *
-                (({i} : Set n).indicator (fun x => κ x {j}) k) := by
-        simp [μ, vecToMeasure]
-        ring_nf
-        simp [Set.indicator_apply]
-      have hsum :
-          ∑ k : n, ENNReal.ofReal (π.val k) *
-              (({i} : Set n).indicator (fun x => κ x {j}) k)
-            = ENNReal.ofReal (π.val i) * κ i {j} := by
-        rw [Finset.sum_eq_single i]
-        · simp [Set.indicator_of_mem, Set.mem_singleton_iff]
-        · intro x _ hx
-          simp [Set.indicator_of_notMem, hx]
-        · simp
-      rw [hInt, hsum, k_singleton i j]
-    have hR :
-        ∫⁻ x in ({j} : Set n), κ x {i} ∂μ
-          = ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i) := by
-      classical
-      have hInt :
-          ∫⁻ x in ({j} : Set n), κ x {i} ∂μ
-            = ∑ k : n, ENNReal.ofReal (π.val k) *
-                (({j} : Set n).indicator (fun x => κ x {i}) k) := by
-        simp [μ, vecToMeasure]
-        ring_nf
-        simp [Set.indicator_apply]
-      have hsum :
-          ∑ k : n, ENNReal.ofReal (π.val k) *
-              (({j} : Set n).indicator (fun x => κ x {i}) k)
-            = ENNReal.ofReal (π.val j) * κ j {i} := by
-        rw [Finset.sum_eq_single j]
-        · simp [Set.indicator_of_mem, Set.mem_singleton_iff]
-        · intro k _ hki
-          have : k ∉ ({j} : Set n) := by simpa [Set.mem_singleton_iff] using hki
-          simp [Set.indicator_of_notMem, this]
-        · simp
-      rw [hInt, hsum, k_singleton j i]
-    have hπ_nonneg : ∀ x, 0 ≤ π.val x := π.property.1
-    have hP_nonneg : ∀ x y, 0 ≤ P x y := hP.1
-    have hENN :
-        ENNReal.ofReal (π.val i) * ENNReal.ofReal (P i j)
-          = ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i) := by
-      rw [← hL, ← hR]
-      exact hsingle
-    have hreal :
-        π.val i * P i j = π.val j * P j i := by
-      have h₁ :
-          ENNReal.ofReal (π.val i * P i j)
-            = ENNReal.ofReal (π.val i) * ENNReal.ofReal (P i j) := by
-        simp [ENNReal.ofReal_mul, hP_nonneg i j, mul_comm]
-      have h₂ :
-          ENNReal.ofReal (π.val j * P j i)
-            = ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i) := by
-        simp [ENNReal.ofReal_mul, hP_nonneg j i, mul_comm]
-      have : ENNReal.ofReal (π.val i * P i j)
-                = ENNReal.ofReal (π.val j * P j i) := by
-        simpa [h₁, h₂] using hENN
-      have hL_nonneg : 0 ≤ π.val i * P i j :=
-        mul_nonneg (hπ_nonneg i) (hP_nonneg i j)
-      have hR_nonneg : 0 ≤ π.val j * P j i :=
-        mul_nonneg (hπ_nonneg j) (hP_nonneg j i)
-      exact (ENNReal.ofReal_eq_ofReal_iff hL_nonneg hR_nonneg).mp this
-    exact hreal
+-- /-- Matrix reversibility is equivalent to kernel reversibility -/
+-- theorem isReversible_iff_kernel_reversible (P : Matrix n n ℝ) (π : stdSimplex ℝ n)
+--     (hP : IsStochastic P) :
+--     IsReversible P π ↔
+--     Kernel.IsReversible (matrixToKernel P hP) (vecToMeasure π) := by
+--   set κ := matrixToKernel P hP
+--   set μ := vecToMeasure (n := n) π
+--   constructor
+--   · -- (→) Matrix detailed balance ⇒ Kernel reversibility
+--     intro hrev A B hA hB
+--     have k_on_set :
+--         ∀ i, κ i B = ∑ j : n, ENNReal.ofReal (P i j) * B.indicator 1 j := by
+--       intro i
+--       exact kernel_eval_on_set hP i B hB
+--     have hL0' :
+--         ∫⁻ x, (A.indicator (fun x => κ x B)) x ∂μ
+--           = ∑ i : n, ENNReal.ofReal (π.val i) *
+--                 (A.indicator (fun x => κ x B) i) := by
+--       simp [μ, vecToMeasure]
+--     have hL0 :
+--         ∫⁻ x in A, κ x B ∂μ
+--           = ∑ i : n, ENNReal.ofReal (π.val i) *
+--                 (A.indicator (fun x => κ x B) i) := by
+--       simpa [lintegral_indicator (μ := μ) (s := A) (f := fun x => κ x B) hA] using hL0'
+--     have hind :
+--         ∀ i, A.indicator (fun x => κ x B) i = κ i B * A.indicator 1 i := by
+--       intro i
+--       by_cases hi : i ∈ A
+--       · simp [Set.indicator_of_mem, hi, mul_comm]
+--       · simp [Set.indicator_of_notMem, hi]
+--     have hL1 :
+--         ∫⁻ x in A, κ x B ∂μ
+--           = ∑ i : n, ENNReal.ofReal (π.val i) * κ i B * A.indicator 1 i := by
+--       simpa [hind, mul_comm, mul_left_comm, mul_assoc] using hL0
+--     have hL2 :
+--         ∫⁻ x in A, κ x B ∂μ
+--           = ∑ i : n, ∑ j : n,
+--               ENNReal.ofReal (π.val i) * ENNReal.ofReal (P i j)
+--                 * A.indicator 1 i * B.indicator 1 j := by
+--       have hstep1 :
+--           (∑ i : n, ENNReal.ofReal (π.val i) * κ i B * A.indicator 1 i)
+--             = ∑ i : n, ∑ j : n,
+--                 ENNReal.ofReal (π.val i) *
+--                   (ENNReal.ofReal (P i j) * B.indicator 1 j) *
+--                   A.indicator 1 i := by
+--         refine Finset.sum_congr rfl (fun i _ => ?_)
+--         calc
+--           ENNReal.ofReal (π.val i) * κ i B * A.indicator 1 i
+--               = (ENNReal.ofReal (π.val i) * A.indicator 1 i) * κ i B := by
+--                 ac_rfl
+--           _ = (ENNReal.ofReal (π.val i) * A.indicator 1 i)
+--                 * ∑ j : n, ENNReal.ofReal (P i j) * B.indicator 1 j := by
+--                 simp [k_on_set i]
+--           _ = ∑ j : n,
+--                 (ENNReal.ofReal (π.val i) * A.indicator 1 i)
+--                   * (ENNReal.ofReal (P i j) * B.indicator 1 j) := by
+--                 simp [Finset.mul_sum]
+--           _ = ∑ j : n,
+--                 ENNReal.ofReal (π.val i)
+--                   * (ENNReal.ofReal (P i j) * B.indicator 1 j)
+--                   * A.indicator 1 i := by
+--                 refine Finset.sum_congr rfl (fun j _ => ?_)
+--                 simp [mul_comm, mul_left_comm, mul_assoc]
+--       have hstep2 :
+--           (∑ i : n, ∑ j : n,
+--                 ENNReal.ofReal (π.val i) *
+--                   (ENNReal.ofReal (P i j) * B.indicator 1 j) *
+--                   A.indicator 1 i)
+--             = ∑ i : n, ∑ j : n,
+--                 ENNReal.ofReal (π.val i) * ENNReal.ofReal (P i j)
+--                   * A.indicator 1 i * B.indicator 1 j := by
+--         refine Finset.sum_congr rfl (fun i _ => ?_)
+--         refine Finset.sum_congr rfl (fun j _ => ?_)
+--         simp [mul_comm, mul_left_comm, mul_assoc]
+--       simpa [hL1] using hstep1.trans hstep2
+--     have hR0' :
+--         ∫⁻ x, (B.indicator (fun x => κ x A)) x ∂μ
+--           = ∑ j : n, ENNReal.ofReal (π.val j) * (B.indicator (fun x => κ x A) j) := by
+--       simp [μ, vecToMeasure]
+--     have hR0 :
+--         ∫⁻ x in B, κ x A ∂μ
+--           = ∑ j : n, ENNReal.ofReal (π.val j) * (B.indicator (fun x => κ x A) j) := by
+--       simpa [lintegral_indicator (μ := μ) (s := B) (f := fun x => κ x A) hB] using hR0'
+--     have hind' :
+--         ∀ j, B.indicator (fun x => κ x A) j = κ j A * B.indicator 1 j := by
+--       intro j
+--       by_cases hj : j ∈ B
+--       · simp [Set.indicator_of_mem, hj, mul_comm]
+--       · simp [Set.indicator_of_notMem, hj]
+--     have hR0'' :
+--         ∫⁻ x in B, κ x A ∂μ
+--           = ∑ j : n, ENNReal.ofReal (π.val j) * κ j A * B.indicator 1 j := by
+--       simpa [hind', mul_comm, mul_left_comm, mul_assoc] using hR0
+--     have k_on_set' :
+--         ∀ j, κ j A = ∑ i : n, ENNReal.ofReal (P j i) * A.indicator 1 i := by
+--       intro j
+--       exact kernel_eval_on_set hP j A hA
+--     have hR1 :
+--         ∫⁻ x in B, κ x A ∂μ
+--           = ∑ j : n, ∑ i : n,
+--               ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i)
+--                 * B.indicator 1 j * A.indicator 1 i := by
+--       have hstep1 :
+--           (∑ j : n, ENNReal.ofReal (π.val j) * κ j A * B.indicator 1 j)
+--             = ∑ j : n, ∑ i : n,
+--                 ENNReal.ofReal (π.val j) *
+--                   (ENNReal.ofReal (P j i) * A.indicator 1 i) *
+--                   B.indicator 1 j := by
+--         refine Finset.sum_congr rfl (fun j _ => ?_)
+--         calc
+--           ENNReal.ofReal (π.val j) * κ j A * B.indicator 1 j
+--               = (ENNReal.ofReal (π.val j) * B.indicator 1 j) * κ j A := by
+--                 ac_rfl
+--           _ = (ENNReal.ofReal (π.val j) * B.indicator 1 j)
+--                 * ∑ i : n, ENNReal.ofReal (P j i) * A.indicator 1 i := by
+--                 simp [k_on_set' j]
+--           _ = ∑ i : n,
+--                 (ENNReal.ofReal (π.val j) * B.indicator 1 j)
+--                   * (ENNReal.ofReal (P j i) * A.indicator 1 i) := by
+--                 simp [Finset.mul_sum]
+--           _ = ∑ i : n,
+--                 ENNReal.ofReal (π.val j)
+--                   * (ENNReal.ofReal (P j i) * A.indicator 1 i)
+--                   * B.indicator 1 j := by
+--                 refine Finset.sum_congr rfl (fun i _ => ?_)
+--                 simp [mul_comm, mul_left_comm, mul_assoc]
+--       have hstep2 :
+--           (∑ j : n, ∑ i : n,
+--                 ENNReal.ofReal (π.val j) *
+--                   (ENNReal.ofReal (P j i) * A.indicator 1 i) *
+--                   B.indicator 1 j)
+--             = ∑ j : n, ∑ i : n,
+--                 ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i)
+--                   * B.indicator 1 j * A.indicator 1 i := by
+--         refine Finset.sum_congr rfl (fun j _ => ?_)
+--         refine Finset.sum_congr rfl (fun i _ => ?_)
+--         simp [mul_comm, mul_left_comm, mul_assoc]
+--       rw [hR0'', hstep1, hstep2]
+--     have hR2 :
+--         ∫⁻ x in B, κ x A ∂μ
+--           = ∑ i : n, ∑ j : n,
+--               ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i)
+--                 * A.indicator 1 i * B.indicator 1 j := by
+--       calc
+--         ∫⁻ x in B, κ x A ∂μ
+--             = ∑ j : n, ∑ i : n,
+--                 ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i)
+--                   * B.indicator 1 j * A.indicator 1 i := hR1
+--         _ = ∑ i : n, ∑ j : n,
+--                 ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i)
+--                   * B.indicator 1 j * A.indicator 1 i := by
+--               exact
+--                 (Finset.sum_comm
+--                   (s := (Finset.univ : Finset n))
+--                   (t := (Finset.univ : Finset n))
+--                   (f := fun j i =>
+--                     ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i)
+--                       * B.indicator 1 j * A.indicator 1 i))
+--         _ = ∑ i : n, ∑ j : n,
+--                 ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i)
+--                   * A.indicator 1 i * B.indicator 1 j := by
+--               refine Finset.sum_congr rfl (fun i _ => ?_)
+--               refine Finset.sum_congr rfl (fun j _ => ?_)
+--               simp [mul_comm, mul_left_comm, mul_assoc]
+--     have hπ_nonneg : ∀ i, 0 ≤ π.val i := π.property.1
+--     have hP_nonneg : ∀ i j, 0 ≤ P i j := hP.1
+--     have hcoeff :
+--         ∀ i j,
+--           ENNReal.ofReal (π.val i) * ENNReal.ofReal (P i j)
+--             = ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i) := by
+--       intro i j
+--       simpa [ENNReal.ofReal_mul, hπ_nonneg _, hP_nonneg _ _, mul_comm, mul_left_comm, mul_assoc]
+--         using congrArg ENNReal.ofReal (hrev i j)
+--     have : ∫⁻ x in A, κ x B ∂μ
+--             = ∫⁻ x in B, κ x A ∂μ := by
+--       rw [hL2, hR2]
+--       refine Finset.sum_congr rfl (fun i _ => ?_)
+--       refine Finset.sum_congr rfl (fun j _ => ?_)
+--       rw [hcoeff i j]
+--     exact this
+--   · -- (←) Kernel reversibility ⇒ Matrix detailed balance on entries
+--     intro hker
+--     have k_singleton : ∀ i j, κ i {j} = ENNReal.ofReal (P i j) := by
+--       intro i j
+--       exact kernel_eval_singleton hP i j
+--     intro i j
+--     have hAi : MeasurableSet ({i} : Set n) := measurableSet_singleton i
+--     have hBj : MeasurableSet ({j} : Set n) := measurableSet_singleton j
+--     have hsingle := hker hAi hBj
+--     have hL :
+--         ∫⁻ x in ({i} : Set n), κ x {j} ∂μ
+--           = ENNReal.ofReal (π.val i) * ENNReal.ofReal (P i j) := by
+--       classical
+--       have hInt :
+--           ∫⁻ x in ({i} : Set n), κ x {j} ∂μ
+--             = ∑ k : n, ENNReal.ofReal (π.val k) *
+--                 (({i} : Set n).indicator (fun x => κ x {j}) k) := by
+--         simp [μ, vecToMeasure]
+--         ring_nf
+--         simp [Set.indicator_apply]
+--       have hsum :
+--           ∑ k : n, ENNReal.ofReal (π.val k) *
+--               (({i} : Set n).indicator (fun x => κ x {j}) k)
+--             = ENNReal.ofReal (π.val i) * κ i {j} := by
+--         rw [Finset.sum_eq_single i]
+--         · simp [Set.indicator_of_mem, Set.mem_singleton_iff]
+--         · intro x _ hx
+--           simp [Set.indicator_of_notMem, hx]
+--         · simp
+--       rw [hInt, hsum, k_singleton i j]
+--     have hR :
+--         ∫⁻ x in ({j} : Set n), κ x {i} ∂μ
+--           = ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i) := by
+--       classical
+--       have hInt :
+--           ∫⁻ x in ({j} : Set n), κ x {i} ∂μ
+--             = ∑ k : n, ENNReal.ofReal (π.val k) *
+--                 (({j} : Set n).indicator (fun x => κ x {i}) k) := by
+--         simp [μ, vecToMeasure]
+--         ring_nf
+--         simp [Set.indicator_apply]
+--       have hsum :
+--           ∑ k : n, ENNReal.ofReal (π.val k) *
+--               (({j} : Set n).indicator (fun x => κ x {i}) k)
+--             = ENNReal.ofReal (π.val j) * κ j {i} := by
+--         rw [Finset.sum_eq_single j]
+--         · simp [Set.indicator_of_mem, Set.mem_singleton_iff]
+--         · intro k _ hki
+--           have : k ∉ ({j} : Set n) := by simpa [Set.mem_singleton_iff] using hki
+--           simp [Set.indicator_of_notMem, this]
+--         · simp
+--       rw [hInt, hsum, k_singleton j i]
+--     have hπ_nonneg : ∀ x, 0 ≤ π.val x := π.property.1
+--     have hP_nonneg : ∀ x y, 0 ≤ P x y := hP.1
+--     have hENN :
+--         ENNReal.ofReal (π.val i) * ENNReal.ofReal (P i j)
+--           = ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i) := by
+--       rw [← hL, ← hR]
+--       exact hsingle
+--     have hreal :
+--         π.val i * P i j = π.val j * P j i := by
+--       have h₁ :
+--           ENNReal.ofReal (π.val i * P i j)
+--             = ENNReal.ofReal (π.val i) * ENNReal.ofReal (P i j) := by
+--         simp [ENNReal.ofReal_mul, hP_nonneg i j, mul_comm]
+--       have h₂ :
+--           ENNReal.ofReal (π.val j * P j i)
+--             = ENNReal.ofReal (π.val j) * ENNReal.ofReal (P j i) := by
+--         simp [ENNReal.ofReal_mul, hP_nonneg j i, mul_comm]
+--       have : ENNReal.ofReal (π.val i * P i j)
+--                 = ENNReal.ofReal (π.val j * P j i) := by
+--         simpa [h₁, h₂] using hENN
+--       have hL_nonneg : 0 ≤ π.val i * P i j :=
+--         mul_nonneg (hπ_nonneg i) (hP_nonneg i j)
+--       have hR_nonneg : 0 ≤ π.val j * P j i :=
+--         mul_nonneg (hπ_nonneg j) (hP_nonneg j i)
+--       exact (ENNReal.ofReal_eq_ofReal_iff hL_nonneg hR_nonneg).mp this
+--     exact hreal
 
 /-! A Markov-kernel instance for the matrix-induced kernel -/
 instance matrixToKernel_isMarkov (P : Matrix n n ℝ) (hP : IsStochastic P) :
@@ -480,13 +480,13 @@ instance matrixToKernel_isMarkov (P : Matrix n n ℝ) (hP : IsStochastic P) :
         (f := fun j => P i j) hnn).symm
   simp [hsum_univ, hsum_ofReal, hP.2 i]
 
-theorem IsReversible.is_stationary' {P : Matrix n n ℝ} {π : stdSimplex ℝ n}
-    (hP : IsStochastic P) (h_rev : IsReversible P π) :
-    IsStationary P π := by
-  rw [isStationary_iff_invariant P π hP]
-  rw [isReversible_iff_kernel_reversible P π hP] at h_rev
-  haveI : IsMarkovKernel (matrixToKernel P hP) := matrixToKernel_isMarkov P hP
-  exact h_rev.invariant
+-- theorem IsReversible.is_stationary' {P : Matrix n n ℝ} {π : stdSimplex ℝ n}
+--     (hP : IsStochastic P) (h_rev : IsReversible P π) :
+--     IsStationary P π := by
+--   rw [isStationary_iff_invariant P π hP]
+--   rw [isReversible_iff_kernel_reversible P π hP] at h_rev
+--   haveI : IsMarkovKernel (matrixToKernel P hP) := matrixToKernel_isMarkov P hP
+--   exact h_rev.invariant
 
 
 end MCMC.Finite
