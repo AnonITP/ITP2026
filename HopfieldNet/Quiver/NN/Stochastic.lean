@@ -2,12 +2,12 @@ import HopfieldNet.Quiver.NN.Main
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
 /-- Probability Mass Function over Neural Network States -/
-def NeuralNetwork.StatePMF {R U σ : Type} [Zero R]
-  (NN : NeuralNetwork R U σ) := PMF (NN.State)
+def NeuralNetwork.StatePMF {R U ζ : Type} [Zero R]
+  (NN : NeuralNetwork R U ζ) := PMF (NN.State)
 
 /-- Temperature-parameterized stochastic dynamics for neural networks -/
-def NeuralNetwork.StochasticDynamics {R U σ : Type} [Zero R]
-    (NN : NeuralNetwork R U σ) :=
+def NeuralNetwork.StochasticDynamics {R U ζ : Type} [Zero R]
+    (NN : NeuralNetwork R U ζ) :=
   ∀ (_ : ℝ), NN.State → NeuralNetwork.StatePMF NN
 
 -- /-- Metropolis acceptance decision as a probability mass function over Boolean outcomes -/

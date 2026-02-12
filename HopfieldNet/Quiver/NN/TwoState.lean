@@ -19,27 +19,27 @@ limit as `β → ∞` (equivalently, `T → 0+`).
 ## Overview
 
 - Abstract typeclass `TwoStateNeuralNetwork` for two-valued activations:
-  it exposes distinguished states `σ_pos`, `σ_neg`, a canonical index `θ0` for the
+  it exposes distinguished states `ζ_pos`, `ζ_neg`, a canonical index `θ0` for the
   single threshold parameter, and order data connecting the numeric embedding `m`
-  of the two states (`m σ_neg < m σ_pos`).
+  of the two states (`m ζ_neg < m ζ_pos`).
 
 - Three concrete encodings of (symmetric) Hopfield parameters:
-  * `SymmetricBinary R U` with σ = R and activations in {-1, 1}.
-  * `SymmetricSignum R U` with σ = Signum (a type-level two-point type).
-  * `ZeroOne R U` with σ = R and activations in {0, 1}.
+  * `SymmetricBinary R U` with ζ = R and activations in {-1, 1}.
+  * `SymmetricSignum R U` with ζ = Signum (a type-level two-point type).
+  * `ZeroOne R U` with ζ = R and activations in {0, 1}.
 
 - A scale parameter, pushed along a ring hom `f`:
   * `scale f : ℝ` and its ring-generalization `scaleS f : S`.
-    These quantify the numeric gap between `σ_pos` and `σ_neg` in the image of `f`.
+    These quantify the numeric gap between `ζ_pos` and `ζ_neg` in the image of `f`.
 
 - Probabilistic update at positive temperature:
   * `logisticProb x := 1 / (1 + exp(-x))` with basic bounds
     `logisticProb_nonneg` and `logisticProb_le_one`.
-  * `probPos f p T s u : ℝ` gives `P(σ_u = σ_pos)` for one Gibbs update, formed from
+  * `probPos f p T s u : ℝ` gives `P(ζ_u = ζ_pos)` for one Gibbs update, formed from
     logisticProb with argument `(scale f) * f(local field) * β(T)`.
 
 - One-site PMF update (and sweeps):
-  * `updPos`, `updNeg`: force a single site to `σ_pos`/`σ_neg`.
+  * `updPos`, `updNeg`: force a single site to `ζ_pos`/`ζ_neg`.
   * `gibbsUpdate f p T s u : PMF State` is the one-site Gibbs update.
   * `zeroTempDet p s u` is the deterministic threshold update at `T = 0`.
   * `gibbsSweepAux`, `gibbsSweep`: sequential composition over a list of sites.
@@ -68,7 +68,7 @@ limit as `β → ∞` (equivalently, `T → 0+`).
 
 - Interfaces and instances:
   * `class TwoStateNeuralNetwork NN`:
-    exposes `σ_pos`, `σ_neg`, `θ0`, and ordering data `m σ_neg < m σ_pos`.
+    exposes `ζ_pos`, `ζ_neg`, `θ0`, and ordering data `m ζ_neg < m ζ_pos`.
   * Instances:
     - `instTwoStateSymmetricBinary` for `SymmetricBinary`,
     - `instTwoStateSignum` for `SymmetricSignum`,
@@ -76,7 +76,7 @@ limit as `β → ∞` (equivalently, `T → 0+`).
 
 - Scaling tools:
   * `scale f : ℝ`, `scaleS f : S`:
-    gap between the numeric images of `σ_pos` and `σ_neg`.
+    gap between the numeric images of `ζ_pos` and `ζ_neg`.
     Specializations:
       - `scale_binary f = f 2` on `SymmetricBinary`,
       - `scale_zeroOne f = f 1` on `ZeroOne`.
@@ -127,8 +127,8 @@ limit as `β → ∞` (equivalently, `T → 0+`).
 
 - The class `TwoStateNeuralNetwork` abstracts the parts of a network used by a
   two-site threshold update: a canonical scalar threshold index `θ0`, the result
-  of `fact` at or above threshold (`σ_pos`) and strictly below (`σ_neg`), and
-  numeric ordering `m σ_neg < m σ_pos`.
+  of `fact` at or above threshold (`ζ_pos`) and strictly below (`ζ_neg`), and
+  numeric ordering `m ζ_neg < m ζ_pos`.
 - The concrete Hopfield instances share the same adjacency and `κ2 = 1` setup,
   but differ in the activation alphabet and decoding map `m`.
 - The scaling `scale f` is a thin adapter that makes formulas uniform across
@@ -159,71 +159,71 @@ limit as `β → ∞` (equivalently, `T → 0+`).
 open Finset Matrix NeuralNetwork State Constants Temperature Filter Topology
 open scoped ENNReal NNReal BigOperators
 
---variable {R U σ : Type}
---variable {R U σ : Type*}
+--variable {R U ζ : Type}
+--variable {R U ζ : Type*}
 
 -- Keep everything in `Type` (universe 0) to match `NeuralNetwork.State` in this project.
-variable {R : Type} {U : Type} {σ : Type}
+variable {R : Type} {U : Type} {ζ : Type}
 
---variable {R U σ : Type}
+--variable {R U ζ : Type}
 
 /-- A minimal two-point activation alphabet.
 
 This class specifies:
-- `σ_pos`: the distinguished “positive” activation,
-- `σ_neg`: the distinguished “negative” activation,
-- `embed`: a numeric embedding `σ → R` used to interpret activations in the ambient ring `R`.
+- `ζ_pos`: the distinguished “positive” activation,
+- `ζ_neg`: the distinguished “negative” activation,
+- `embed`: a numeric embedding `ζ → R` used to interpret activations in the ambient ring `R`.
 -/
-class TwoPointActivation (R : Type) (σ : Type) where
+class TwoPointActivation (R : Type) (ζ : Type) where
   /-- Distinguished “positive” activation state. -/
-  σ_pos : σ
+  ζ_pos : ζ
   /-- Distinguished “negative” activation state. -/
-  σ_neg : σ
+  ζ_neg : ζ
   /-- Numeric embedding of activation states into the ambient ring `R`. -/
-  embed : σ → R
+  embed : ζ → R
 
-/-- Scale between the two distinguished activations in `σ`, computed in `R` via the embedding.
-It is defined as `embed σ_pos - embed σ_neg`. -/
-@[simp] def twoPointScale {R σ} [Sub R] [TwoPointActivation R σ] : R :=
-  TwoPointActivation.embed (R:=R) (σ:=σ) (TwoPointActivation.σ_pos (R:=R) (σ:=σ)) -
-    TwoPointActivation.embed (R:=R) (σ:=σ) (TwoPointActivation.σ_neg (R:=R) (σ:=σ))
+/-- Scale between the two distinguished activations in `ζ`, computed in `R` via the embedding.
+It is defined as `embed ζ_pos - embed ζ_neg`. -/
+@[simp] def twoPointScale {R ζ} [Sub R] [TwoPointActivation R ζ] : R :=
+  TwoPointActivation.embed (R:=R) (ζ:=ζ) (TwoPointActivation.ζ_pos (R:=R) (ζ:=ζ)) -
+    TwoPointActivation.embed (R:=R) (ζ:=ζ) (TwoPointActivation.ζ_neg (R:=R) (ζ:=ζ))
 
 /-- Two–state neural networks (abstract interface).
 
 This exposes:
-- `σ_pos`, `σ_neg`: the two distinguished activation states,
+- `ζ_pos`, `ζ_neg`: the two distinguished activation states,
 - `θ0`: a canonical index into the `κ2`-vector of thresholds extracting the scalar threshold,
-- facts that `fact` returns `σ_pos` at or above `θ0`, and `σ_neg` strictly below,
-- that both `σ_pos` and `σ_neg` satisfy `pact`,
-- and an order gap on the numeric embedding `m` (`m σ_neg < m σ_pos`). -/
-class TwoStateNeuralNetwork {R U σ}
+- facts that `fact` returns `ζ_pos` at or above `θ0`, and `ζ_neg` strictly below,
+- that both `ζ_pos` and `ζ_neg` satisfy `pact`,
+- and an order gap on the numeric embedding `m` (`m ζ_neg < m ζ_pos`). -/
+class TwoStateNeuralNetwork {R U ζ}
   [Field R] [LinearOrder R] [IsStrictOrderedRing R]
-  (NN : NeuralNetwork R U σ) where
+  (NN : NeuralNetwork R U ζ) where
   /-- Distinguished “positive” activation state. -/
-  σ_pos : σ
+  ζ_pos : ζ
   /-- Distinguished “negative” activation state. -/
-  σ_neg : σ
+  ζ_neg : ζ
   /-- Proof that the two distinguished activation states are distinct. -/
-  h_pos_ne_neg : σ_pos ≠ σ_neg
+  h_pos_ne_neg : ζ_pos ≠ ζ_neg
   /-- Canonical index in `κ2 u` selecting the scalar threshold used by `fact`. -/
   θ0 : ∀ u : U, Fin (NN.κ2 u)
-  /-- At or above threshold `θ0 u`, `fact` returns `σ_pos`. -/
+  /-- At or above threshold `θ0 u`, `fact` returns `ζ_pos`. -/
   h_fact_pos :
-    ∀ u (σcur : σ) (net : R) (θ : Vector R (NN.κ2 u)),
-      (θ.get (θ0 u)) ≤ net → NN.fact u σcur net θ = σ_pos
-  /-- Strictly below threshold `θ0 u`, `fact` returns `σ_neg`. -/
+    ∀ u (ζcur : ζ) (net : R) (θ : Vector R (NN.κ2 u)),
+      (θ.get (θ0 u)) ≤ net → NN.fact u ζcur net θ = ζ_pos
+  /-- Strictly below threshold `θ0 u`, `fact` returns `ζ_neg`. -/
   h_fact_neg :
-    ∀ u (σcur : σ) (net : R) (θ : Vector R (NN.κ2 u)),
-      net < (θ.get (θ0 u)) → NN.fact u σcur net θ = σ_neg
-  /-- `σ_pos` satisfies the activation predicate `pact`. -/
-  h_pact_pos : NN.pact σ_pos
-  /-- `σ_neg` satisfies the activation predicate `pact`. -/
-  h_pact_neg : NN.pact σ_neg
-  /-- Numeric embedding separates the two states: `m σ_neg < m σ_pos`. -/
-  m_order : NN.m σ_neg < NN.m σ_pos
+    ∀ u (ζcur : ζ) (net : R) (θ : Vector R (NN.κ2 u)),
+      net < (θ.get (θ0 u)) → NN.fact u ζcur net θ = ζ_neg
+  /-- `ζ_pos` satisfies the activation predicate `pact`. -/
+  h_pact_pos : NN.pact ζ_pos
+  /-- `ζ_neg` satisfies the activation predicate `pact`. -/
+  h_pact_neg : NN.pact ζ_neg
+  /-- Numeric embedding separates the two states: `m ζ_neg < m ζ_pos`. -/
+  m_order : NN.m ζ_neg < NN.m ζ_pos
 
 namespace TwoState
-variable {R : Type} {U : Type} {σ : Type}
+variable {R : Type} {U : Type} {ζ : Type}
 variable [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 
 /-! Concrete network families (three encodings). -/
@@ -231,7 +231,7 @@ variable [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 /-- Helper canonical index for all concrete networks with κ2 = 1. -/
 @[inline] def fin0 : Fin 1 := ⟨0, by decide⟩
 
-/-- Standard symmetric Hopfield parameters with activations in {-1,1} (σ = R). -/
+/-- Standard symmetric Hopfield parameters with activations in {-1,1} (ζ = R). -/
 def SymmetricBinary (R : Type u₁) (U : Type u) [Field R] [LinearOrder R]
     [DecidableEq U] [Fintype U] [Nonempty U] : NeuralNetwork R U R :=
 { Hom := fun u v => PLift (u ≠ v)
@@ -252,8 +252,7 @@ def SymmetricBinary (R : Type u₁) (U : Type u) [Field R] [LinearOrder R]
   fout := fun _ a => a
   m := id
   hpact := by
-    classical
-    intro _ W _ _ _ σ θ cur hcur u
+    intro _ W _ _ _ ζ θ cur hcur u
     by_cases hth :
         (θ u).get fin0 ≤ ∑ v, if v ≠ u then W u v * cur v else 0
     · grind
@@ -267,7 +266,7 @@ instance : Fintype Signum where
   elems := {Signum.pos, Signum.neg}
   complete := by intro x; cases x <;> simp
 
-/-- Symmetric Hopfield parameters with σ = Signum. -/
+/-- Symmetric Hopfield parameters with ζ = Signum. -/
 def SymmetricSignum (R : Type u₁) (U : Type u) [Field R] [LinearOrder R]
     [DecidableEq U] [Fintype U] [Nonempty U] : NeuralNetwork R U Signum :=
 { Hom := fun u v => PLift (u ≠ v)
@@ -289,14 +288,14 @@ def SymmetricSignum (R : Type u₁) (U : Type u) [Field R] [LinearOrder R]
   m := fun s => match s with | .pos => (1 : R) | .neg => (-1 : R)
   hpact := by intro; simp }
 
-/-- Zero / one network (σ ∈ {0,1}). -/
+/-- Zero / one network (ζ ∈ {0,1}). -/
 def ZeroOne (R : Type u₁) (U : Type u) [Field R] [LinearOrder R]
     [DecidableEq U] [Fintype U] [Nonempty U] : NeuralNetwork R U R :=
 { (SymmetricBinary R U) with
   pact := fun a => a = 0 ∨ a = 1
   fact := fun _ _ net θ => if θ.get fin0 ≤ net then 1 else 0
   hpact := by
-    intro _ W _ _ _ σ θ cur hcur u
+    intro _ W _ _ _ ζ θ cur hcur u
     by_cases hth :
         (θ u).get fin0 ≤ ∑ v, if v ≠ u then W u v * cur v else 0
     · grind
@@ -306,7 +305,7 @@ variable [DecidableEq U] [Fintype U] [Nonempty U]
 
 instance instTwoStateSymmetricBinary :
   TwoStateNeuralNetwork (SymmetricBinary R U) where
-  σ_pos := (1 : R); σ_neg := (-1 : R)
+  ζ_pos := (1 : R); ζ_neg := (-1 : R)
   h_pos_ne_neg := by
     have h0 : (0 : R) < 1 := zero_lt_one
     have hneg : (-1 : R) < 0 := by simp
@@ -314,9 +313,9 @@ instance instTwoStateSymmetricBinary :
     exact (ne_of_lt hlt).symm
   θ0 := fun _ => fin0
   h_fact_pos := by
-    intro u σcur net θ hle; simp [SymmetricBinary, hle]
+    intro u ζcur net θ hle; simp [SymmetricBinary, hle]
   h_fact_neg := by
-    intro u σcur net θ hlt
+    intro u ζcur net θ hlt
     have : ¬ θ.get fin0 ≤ net := not_le.mpr hlt
     simp [SymmetricBinary, this]
   h_pact_pos := by left; rfl
@@ -328,15 +327,15 @@ instance instTwoStateSymmetricBinary :
 
 instance instTwoStateSignum :
   TwoStateNeuralNetwork (SymmetricSignum R U) where
-  σ_pos := Signum.pos; σ_neg := Signum.neg
+  ζ_pos := Signum.pos; ζ_neg := Signum.neg
   h_pos_ne_neg := by intro h; cases h
   θ0 := fun _ => fin0
   h_fact_pos := by
-    intro u σcur net θ hn
+    intro u ζcur net θ hn
     change (if θ.get fin0 ≤ net then Signum.pos else Signum.neg) = Signum.pos
     simp [hn]
   h_fact_neg := by
-    intro u σcur net θ hlt
+    intro u ζcur net θ hlt
     change (if θ.get fin0 ≤ net then Signum.pos else Signum.neg) = Signum.neg
     have : ¬ θ.get fin0 ≤ net := not_le.mpr hlt
     simp [this]
@@ -350,15 +349,15 @@ instance instTwoStateSignum :
 
 instance instTwoStateZeroOne :
   TwoStateNeuralNetwork (ZeroOne R U) where
-  σ_pos := (1 : R); σ_neg := (0 : R)
+  ζ_pos := (1 : R); ζ_neg := (0 : R)
   h_pos_ne_neg := one_ne_zero
   θ0 := fun _ => fin0
   h_fact_pos := by
-    intro u σcur net θ hn
+    intro u ζcur net θ hn
     change (if θ.get fin0 ≤ net then (1 : R) else 0) = 1
     simp [hn]
   h_fact_neg := by
-    intro u σcur net θ hlt
+    intro u ζcur net θ hlt
     change (if θ.get fin0 ≤ net then (1 : R) else 0) = 0
     have : ¬ θ.get fin0 ≤ net := not_le.mpr hlt
     simp [this]
@@ -371,33 +370,33 @@ instance instTwoStateZeroOne :
 /-- Scale between numeric embeddings of the two states (pushed along f). -/
 def scale
     {F} [FunLike F R ℝ]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (f : F) : ℝ :=
-  f (NN.m (TwoStateNeuralNetwork.σ_pos (NN:=NN))) -
-    f (NN.m (TwoStateNeuralNetwork.σ_neg (NN:=NN)))
+  f (NN.m (TwoStateNeuralNetwork.ζ_pos (NN:=NN))) -
+    f (NN.m (TwoStateNeuralNetwork.ζ_neg (NN:=NN)))
 
 /-- Generalized scale in an arbitrary target ring S. -/
 def scaleS
     {S} [Ring S] {F} [FunLike F R S]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN] (f : F) : S :=
-  f (NN.m (TwoStateNeuralNetwork.σ_pos (NN:=NN))) -
-    f (NN.m (TwoStateNeuralNetwork.σ_neg (NN:=NN)))
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN] (f : F) : S :=
+  f (NN.m (TwoStateNeuralNetwork.ζ_pos (NN:=NN))) -
+    f (NN.m (TwoStateNeuralNetwork.ζ_neg (NN:=NN)))
 
 @[simp] lemma scaleS_apply_ℝ
     {F} [FunLike F R ℝ]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN] (f : F) :
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN] (f : F) :
     scaleS (NN:=NN) (f:=f) = scale (NN:=NN) (f:=f) := rfl
 
 @[simp] lemma scale_binary (f : R →+* ℝ) :
-    scale (R:=R) (U:=U) (σ:=R) (NN:=SymmetricBinary R U) (f:=f) = f 2 := by
-  -- σ_pos = 1, σ_neg = -1, m = id
+    scale (R:=R) (U:=U) (ζ:=R) (NN:=SymmetricBinary R U) (f:=f) = f 2 := by
+  -- ζ_pos = 1, ζ_neg = -1, m = id
   unfold scale
   simp [instTwoStateSymmetricBinary, SymmetricBinary, sub_neg_eq_add, one_add_one_eq_two]
   rw [@map_ofNat]
 
 @[simp] lemma scale_zeroOne (f : R →+* ℝ) :
-    scale (R:=R) (U:=U) (σ:=R) (NN:=ZeroOne R U) (f:=f) = f 1 := by
-  -- σ_pos = 1, σ_neg = 0, m = id
+    scale (R:=R) (U:=U) (ζ:=R) (NN:=ZeroOne R U) (f:=f) = f 1 := by
+  -- ζ_pos = 1, ζ_neg = 0, m = id
   unfold scale
   simp [instTwoStateZeroOne, ZeroOne, SymmetricBinary]
 
@@ -436,59 +435,59 @@ lemma logisticProb_lt_one (x : ℝ) : logisticProb x < 1 := by
     simpa [one_mul] using hden_gt
   simpa using this
 
-/-- Probability P(σ_u = σ_pos) for one Gibbs update. -/
+/-- Probability P(ζ_u = ζ_pos) for one Gibbs update. -/
 noncomputable def probPos
     {F} [FunLike F R ℝ]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (f : F) (p : Params NN) (T : Temperature) (s : NN.State) (u : U) : ℝ :=
   let L := (s.net p u) - (p.θ u).get (TwoStateNeuralNetwork.θ0 (NN:=NN) u)
-  let κ := scale (R:=R) (U:=U) (σ:=σ) (NN:=NN) (f:=f)
+  let κ := scale (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) (f:=f)
   logisticProb (κ * (f L) * (β T))
 
 lemma probPos_nonneg
     {F} [FunLike F R ℝ]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (f : F) (p : Params NN) (T : Temperature) (s : NN.State) (u : U) :
-    0 ≤ probPos (R:=R) (U:=U) (σ:=σ) (NN:=NN) f p T s u := by
+    0 ≤ probPos (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) f p T s u := by
   unfold probPos; apply logisticProb_nonneg
 
 lemma probPos_le_one
     {F} [FunLike F R ℝ]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (f : F) (p : Params NN) (T : Temperature) (s : NN.State) (u : U) :
-    probPos (R:=R) (U:=U) (σ:=σ) (NN:=NN) f p T s u ≤ 1 := by
+    probPos (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) f p T s u ≤ 1 := by
   unfold probPos; apply logisticProb_le_one
 
 lemma probPos_pos
     {F} [FunLike F R ℝ]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (f : F) (p : Params NN) (T : Temperature) (s : NN.State) (u : U) :
-    0 < probPos (R:=R) (U:=U) (σ:=σ) (NN:=NN) f p T s u := by
+    0 < probPos (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) f p T s u := by
   unfold probPos
   exact logisticProb_pos _
 
 lemma probPos_lt_one
     {F} [FunLike F R ℝ]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (f : F) (p : Params NN) (T : Temperature) (s : NN.State) (u : U) :
-    probPos (R:=R) (U:=U) (σ:=σ) (NN:=NN) f p T s u < 1 := by
+    probPos (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) f p T s u < 1 := by
   unfold probPos
   exact logisticProb_lt_one _
 
-/-- Force neuron u to σ_pos. -/
-def updPos {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+/-- Force neuron u to ζ_pos. -/
+def updPos {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (s : NN.State) (u : U) : NN.State :=
-{ act := Function.update s.act u (TwoStateNeuralNetwork.σ_pos (NN:=NN))
+{ act := Function.update s.act u (TwoStateNeuralNetwork.ζ_pos (NN:=NN))
 , hp := by
     intro v
     by_cases h : v = u
     · subst h; simpa using TwoStateNeuralNetwork.h_pact_pos (NN:=NN)
     · simpa [Function.update, h] using s.hp v }
 
-/-- Force neuron u to σ_neg. -/
-def updNeg {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+/-- Force neuron u to ζ_neg. -/
+def updNeg {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (s : NN.State) (u : U) : NN.State :=
-{ act := Function.update s.act u (TwoStateNeuralNetwork.σ_neg (NN:=NN))
+{ act := Function.update s.act u (TwoStateNeuralNetwork.ζ_neg (NN:=NN))
 , hp := by
     intro v
     by_cases h : v = u
@@ -498,14 +497,14 @@ def updNeg {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
 /-- One–site Gibbs update kernel (PMF). -/
 noncomputable def gibbsUpdate
     {F} [FunLike F R ℝ]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (f : F) (p : Params NN) (T : Temperature) (s : NN.State) (u : U) :
     PMF (NN.State) := by
-  let pPos := probPos (R:=R) (U:=U) (σ:=σ) (NN:=NN) f p T s u      -- probability in ℝ
+  let pPos := probPos (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) f p T s u      -- probability in ℝ
   have h_nonneg : 0 ≤ pPos :=
-    probPos_nonneg (R:=R) (U:=U) (σ:=σ) (NN:=NN) f p T s u
+    probPos_nonneg (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) f p T s u
   have h_le : pPos ≤ 1 :=
-    probPos_le_one (R:=R) (U:=U) (σ:=σ) (NN:=NN) f p T s u
+    probPos_le_one (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) f p T s u
   -- Cast to ℝ≥0 for PMF.bernoulli
   let pPosNN : ℝ≥0 := ⟨pPos, h_nonneg⟩
   have h_le' : pPosNN ≤ 1 := by
@@ -517,7 +516,7 @@ noncomputable def gibbsUpdate
 
 /-- Zero–temperature deterministic (threshold) update at site u. -/
 def zeroTempDet
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (p : Params NN) (s : NN.State) (u : U) : NN.State :=
   let net := s.net p u
   let θ := (p.θ u).get (TwoStateNeuralNetwork.θ0 (NN:=NN) u)
@@ -529,7 +528,7 @@ def zeroTempDet
 /-- Gibbs sweep auxiliary function. -/
 noncomputable def gibbsSweepAux
     {F} [FunLike F R ℝ]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (f : F) (p : Params NN) (T : Temperature) :
     List U → NN.State → PMF NN.State
   | [],       s => PMF.pure s
@@ -539,13 +538,13 @@ noncomputable def gibbsSweepAux
 
 @[simp] lemma gibbsSweepAux_nil
     {F} [FunLike F R ℝ]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (f : F) (p : Params NN) (T : Temperature) (s : NN.State) :
     gibbsSweepAux (NN:=NN) f p T [] s = PMF.pure s := rfl
 
 @[simp] lemma gibbsSweepAux_cons
     {F} [FunLike F R ℝ]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (f : F) (p : Params NN) (T : Temperature) (u : U) (us : List U) (s : NN.State) :
     gibbsSweepAux (NN:=NN) f p T (u :: us) s =
       gibbsUpdate (NN:=NN) f p T s u >>= fun s' =>
@@ -554,20 +553,20 @@ noncomputable def gibbsSweepAux
 /-- Sequential Gibbs sweep over a list of sites, head applied first. -/
 noncomputable def gibbsSweep
     {F} [FunLike F R ℝ]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (order : List U) (p : Params NN) (T : Temperature) (f : F)
     (s0 : NN.State) : PMF NN.State :=
   gibbsSweepAux (NN:=NN) f p T order s0
 
 @[simp] lemma gibbsSweep_nil
     {F} [FunLike F R ℝ]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (p : Params NN) (T : Temperature) (f : F) (s0 : NN.State) :
     gibbsSweep (NN:=NN) ([] : List U) p T f s0 = PMF.pure s0 := rfl
 
 lemma gibbsSweep_cons
     {F} [FunLike F R ℝ]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (u : U) (us : List U) (p : Params NN) (T : Temperature) (f : F) (s0 : NN.State) :
     gibbsSweep (NN:=NN) (u :: us) p T f s0 =
       (gibbsUpdate (NN:=NN) f p T s0 u) >>= fun s =>
@@ -576,14 +575,14 @@ lemma gibbsSweep_cons
 @[simp] lemma probPos_nonneg_apply_binary
     (f : R →+* ℝ) (p : Params (SymmetricBinary R U)) (T : Temperature)
     (s : (SymmetricBinary R U).State) (u : U) :
-    0 ≤ probPos (R:=R) (U:=U) (σ:=R) (NN:=SymmetricBinary R U) f p T s u :=
-  probPos_nonneg (R:=R) (U:=U) (σ:=R) (NN:=SymmetricBinary R U) f p T s u
+    0 ≤ probPos (R:=R) (U:=U) (ζ:=R) (NN:=SymmetricBinary R U) f p T s u :=
+  probPos_nonneg (R:=R) (U:=U) (ζ:=R) (NN:=SymmetricBinary R U) f p T s u
 
 @[simp] lemma probPos_le_one_apply_binary
     (f : R →+* ℝ) (p : Params (SymmetricBinary R U)) (T : Temperature)
     (s : (SymmetricBinary R U).State) (u : U) :
-    probPos (R:=R) (U:=U) (σ:=R) (NN:=SymmetricBinary R U) f p T s u ≤ 1 :=
-  probPos_le_one (R:=R) (U:=U) (σ:=R) (NN:=SymmetricBinary R U) f p T s u
+    probPos (R:=R) (U:=U) (ζ:=R) (NN:=SymmetricBinary R U) f p T s u ≤ 1 :=
+  probPos_le_one (R:=R) (U:=U) (ζ:=R) (NN:=SymmetricBinary R U) f p T s u
 
 /-- **Energy specification bundling a global energy and a local field**.
 
@@ -596,9 +595,9 @@ This abstracts the thermodynamic view at the `R` level :
 Together these properties connect energy differences
 to local fields and underpin the Gibbs/zero–temperature analysis. -/
 structure EnergySpec
-    {R U σ} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
+    {R U ζ} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
     [DecidableEq U]
-    (NN : NeuralNetwork R U σ) [TwoStateNeuralNetwork NN] where
+    (NN : NeuralNetwork R U ζ) [TwoStateNeuralNetwork NN] where
   /-- Global energy function `E p s`. -/
   E : Params NN → NN.State → R
   /-- Local field `L = localField p s u` at site `u`. -/
@@ -615,18 +614,18 @@ structure EnergySpec
   flip_energy_relation :
     ∀ (f : R →+* ℝ)
       (p : Params NN) (s : NN.State) (u : U),
-      let sPos := updPos (R:=R) (U:=U) (σ:=σ) (NN:=NN) (s:=s) (u:=u)
-      let sNeg := updNeg (R:=R) (U:=U) (σ:=σ) (NN:=NN) (s:=s) (u:=u)
+      let sPos := updPos (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) (s:=s) (u:=u)
+      let sNeg := updNeg (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) (s:=s) (u:=u)
       f (E p sPos - E p sNeg) =
-        - (scale (R:=R) (U:=U) (σ:=σ) (NN:=NN) (f:=f)) *
+        - (scale (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) (f:=f)) *
           f (localField p s u)
 
 /-- A simplified energy specification carrying the same data as `EnergySpec`,
 with the flip relation stated using inlined `updPos`/`updNeg`. -/
 structure EnergySpec'
-    {R U σ} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
+    {R U ζ} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
     [DecidableEq U]
-    (NN : NeuralNetwork R U σ) [TwoStateNeuralNetwork NN] where
+    (NN : NeuralNetwork R U ζ) [TwoStateNeuralNetwork NN] where
   /-- Global energy function `E p s`. -/
   E : Params NN → NN.State → R
   /-- Local field `L = localField p s u` at site `u`. -/
@@ -642,12 +641,12 @@ structure EnergySpec'
         = - scale f * f (localField p s u)`. -/
   flip_energy_relation :
     ∀ (f : R →+* ℝ) (p : Params NN) (s : NN.State) (u : U),
-      f (E p (updPos (R:=R) (U:=U) (σ:=σ) (NN:=NN) (s:=s) (u:=u))
-           - E p (updNeg (R:=R) (U:=U) (σ:=σ) (NN:=NN) (s:=s) (u:=u))) =
-        - (scale (R:=R) (U:=U) (σ:=σ) (NN:=NN) (f:=f)) * f (localField p s u)
+      f (E p (updPos (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) (s:=s) (u:=u))
+           - E p (updNeg (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) (s:=s) (u:=u))) =
+        - (scale (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) (f:=f)) * f (localField p s u)
 
 namespace EnergySpec
-variable {NN : NeuralNetwork R U σ}
+variable {NN : NeuralNetwork R U ζ}
 variable [TwoStateNeuralNetwork NN]
 
 lemma flip_energy_rel'
@@ -655,7 +654,7 @@ lemma flip_energy_rel'
     (ES : TwoState.EnergySpec (NN := NN)) (f : F)
     (p : Params NN) (s : NN.State) (u : U) :
     f (ES.E p (updPos (NN:=NN) s u) - ES.E p (updNeg (NN:=NN) s u)) =
-      - (scale (R:=R) (U:=U) (σ:=σ) (NN:=NN) (f:=f)) *
+      - (scale (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) (f:=f)) *
         f ((s.net p u) - (p.θ u).get (TwoStateNeuralNetwork.θ0 (NN:=NN) u)) := by
   -- we build a bundled ring hom from f; its coercion is definitionally f
   let f_hom : R →+* ℝ :=
@@ -672,9 +671,9 @@ lemma probPos_eq_of_energy
     {F} [FunLike F R ℝ] [RingHomClass F R ℝ]
     (ES : EnergySpec (NN := NN)) (f : F) (p : Params NN) (T : Temperature)
     (s : NN.State) (u : U) :
-    probPos (R:=R) (U:=U) (σ:=σ) (NN:=NN) f p T s u =
-      let sPos := updPos (R:=R) (U:=U) (σ:=σ) (NN:=NN) (s:=s) (u:=u)
-      let sNeg := updNeg (R:=R) (U:=U) (σ:=σ) (NN:=NN) (s:=s) (u:=u)
+    probPos (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) f p T s u =
+      let sPos := updPos (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) (s:=s) (u:=u)
+      let sNeg := updNeg (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) (s:=s) (u:=u)
       let Δ := f (ES.E p sPos - ES.E p sNeg)
       logisticProb (- Δ * (β T)) := by
   unfold probPos
@@ -685,7 +684,7 @@ lemma probPos_eq_of_energy
 end EnergySpec
 
 namespace EnergySpec'
-variable {NN : NeuralNetwork R U σ}
+variable {NN : NeuralNetwork R U ζ}
 variable [TwoStateNeuralNetwork NN]
 
 /-- Convert an `EnergySpec` to an `EnergySpec'`. -/
@@ -703,7 +702,7 @@ lemma flip_energy_rel'
     (ES : EnergySpec' (NN := NN)) (f : F)
     (p : Params NN) (s : NN.State) (u : U) :
     f (ES.E p (updPos (NN:=NN) s u) - ES.E p (updNeg (NN:=NN) s u)) =
-      - (scale (R:=R) (U:=U) (σ:=σ) (NN:=NN) (f:=f)) *
+      - (scale (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) (f:=f)) *
         f ((s.net p u) - (p.θ u).get (TwoStateNeuralNetwork.θ0 (NN:=NN) u)) := by
   -- Build a bundled ring hom from f; its coercion is definitionally f
   let f_hom : R →+* ℝ :=
@@ -719,12 +718,12 @@ lemma flip_energy_rel'
 end EnergySpec'
 
 lemma EnergySpec.flip_energy_rel''
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (ES : TwoState.EnergySpec (NN := NN))
     {F} [FunLike F R ℝ] [RingHomClass F R ℝ] (f : F)
     (p : Params NN) (s : NN.State) (u : U) :
     f (ES.E p (updPos (NN:=NN) s u) - ES.E p (updNeg (NN:=NN) s u)) =
-      - (scale (R:=R) (U:=U) (σ:=σ) (NN:=NN) (f:=f)) *
+      - (scale (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) (f:=f)) *
         f ((s.net p u) - (p.θ u).get (TwoStateNeuralNetwork.θ0 (NN:=NN) u)) := by
   refine (EnergySpec'.flip_energy_rel'
             (EnergySpec'.ofOld (NN:=NN) ES) (f:=f) p s u)
@@ -736,38 +735,38 @@ open scoped ENNReal NNReal BigOperators
 open NeuralNetwork
 namespace TwoState
 
-/-- Exclusivity predicate (generic scalar): the allowed activations are precisely `σ_pos` or `σ_neg`. -/
+/-- Exclusivity predicate (generic scalar): the allowed activations are precisely `ζ_pos` or `ζ_neg`. -/
 class TwoStateExclusiveR
-    {R U σ} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
-    (NN : NeuralNetwork R U σ)
+    {R U ζ} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
+    (NN : NeuralNetwork R U ζ)
     [TwoStateNeuralNetwork NN] : Prop where
   pact_iff : ∀ a, NN.pact a ↔
-      a = TwoStateNeuralNetwork.σ_pos (NN := NN) ∨
-      a = TwoStateNeuralNetwork.σ_neg (NN := NN)
+      a = TwoStateNeuralNetwork.ζ_pos (NN := NN) ∨
+      a = TwoStateNeuralNetwork.ζ_neg (NN := NN)
 
 attribute [simp] TwoStateExclusiveR.pact_iff
 
 
 lemma updPos_eq_self_of_act_pos
-    {R U σ} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
+    {R U ζ} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
     [Fintype U] [DecidableEq U]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (s : NN.State) (u : U)
-    (h : s.act u = TwoStateNeuralNetwork.σ_pos (NN := NN)) :
-    updPos (R:=R) (U:=U) (σ:=σ) (NN:=NN) s u = s := by
+    (h : s.act u = TwoStateNeuralNetwork.ζ_pos (NN := NN)) :
+    updPos (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) s u = s := by
   ext v
   by_cases hv : v = u
   · subst hv; simp [updPos, Function.update, h]
   · simp [updPos, Function.update, hv]
 
-/-- Helper: if the current activation at `u` is already `σ_neg`, `updNeg` is identity. -/
+/-- Helper: if the current activation at `u` is already `ζ_neg`, `updNeg` is identity. -/
 lemma updNeg_eq_self_of_act_neg
-    {R U σ} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
+    {R U ζ} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
     [Fintype U] [DecidableEq U]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (s : NN.State) (u : U)
-    (h : s.act u = TwoStateNeuralNetwork.σ_neg (NN := NN)) :
-    updNeg (R:=R) (U:=U) (σ:=σ) (NN:=NN) s u = s := by
+    (h : s.act u = TwoStateNeuralNetwork.ζ_neg (NN := NN)) :
+    updNeg (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) s u = s := by
   ext v
   by_cases hv : v = u
   · subst hv; simp [updNeg, Function.update, h]
@@ -777,15 +776,15 @@ lemma updNeg_eq_self_of_act_neg
 `Up` equals `updPos` if `θ ≤ net`, else `updNeg`. (Explicit parameters to
 stabilize elaboration.) -/
 lemma Up_eq_updPos_or_updNeg
-    {R U σ} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
+    {R U ζ} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
     [Fintype U] [DecidableEq U]
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (p : Params NN) (s : NN.State) (u : U) :
     let net := s.net p u
     let θ   := (p.θ u).get (TwoStateNeuralNetwork.θ0 (NN:=NN) u)
     s.Up p u =
-      (if θ ≤ net then updPos (R:=R) (U:=U) (σ:=σ) (NN:=NN) s u
-       else updNeg (R:=R) (U:=U) (σ:=σ) (NN:=NN) s u) := by
+      (if θ ≤ net then updPos (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) s u
+       else updNeg (R:=R) (U:=U) (ζ:=ζ) (NN:=NN) s u) := by
   intro net θ
   ext v
   by_cases hv : v = u
@@ -797,7 +796,7 @@ lemma Up_eq_updPos_or_updNeg
         TwoStateNeuralNetwork.h_fact_pos (NN:=NN) v (s.act v) net (p.θ v) hθle
       have : NN.fact v (s.act v)
           (NN.fnet v (p.w v) (fun w => s.out w) (p.σ v))
-          (p.θ v) = TwoStateNeuralNetwork.σ_pos (NN:=NN) := by
+          (p.θ v) = TwoStateNeuralNetwork.ζ_pos (NN:=NN) := by
         simpa [NeuralNetwork.State.net] using hpos
       simp [updPos, Function.update, this, hθle]
       grind
@@ -806,7 +805,7 @@ lemma Up_eq_updPos_or_updNeg
         TwoStateNeuralNetwork.h_fact_neg (NN:=NN) v (s.act v) net (p.θ v) hlt
       have : NN.fact v (s.act v)
           (NN.fnet v (p.w v) (fun w => s.out w) (p.σ v))
-          (p.θ v) = TwoStateNeuralNetwork.σ_neg (NN:=NN) := by
+          (p.θ v) = TwoStateNeuralNetwork.ζ_neg (NN:=NN) := by
         simpa [NeuralNetwork.State.net] using hneg
       simp [updNeg, Function.update, this, hθle]
       grind
@@ -821,8 +820,8 @@ namespace TwoState.EnergySpec'
   E sPos - E sNeg = - κ * L   with κ ≥ 0,
 we deduce the two directional inequalities depending on the sign of L. -/
 lemma energy_order_from_flip_id
-    {U σ} [Fintype U] [DecidableEq U]
-    (NN : NeuralNetwork ℝ U σ) [TwoStateNeuralNetwork NN]
+    {U ζ} [Fintype U] [DecidableEq U]
+    (NN : NeuralNetwork ℝ U ζ) [TwoStateNeuralNetwork NN]
     (spec : EnergySpec' (NN := NN))
     {p : Params NN}
     {κ L : ℝ} {sPos sNeg : NN.State}
@@ -883,7 +882,7 @@ lemma Up_eq_updPos_or_updNeg_binary
   intro net θ
   simpa [net, θ] using
     (TwoState.Up_eq_updPos_or_updNeg
-        (R:=ℝ) (U:=U) (σ:=ℝ)
+        (R:=ℝ) (U:=U) (ζ:=ℝ)
         (NN:=SymmetricBinary ℝ U) p s u)
 
 lemma energy_order_from_flip_id_binary
@@ -973,12 +972,12 @@ open TwoState
 
 /-- General (non-binary–specialized) Lyapunov single–site energy descent lemma. -/
 lemma energy_is_lyapunov_at_site
-    {U σ} [Fintype U] [DecidableEq U]
-    (NN : NeuralNetwork ℝ U σ) [TwoStateNeuralNetwork NN]
+    {U ζ} [Fintype U] [DecidableEq U]
+    (NN : NeuralNetwork ℝ U ζ) [TwoStateNeuralNetwork NN]
     (spec : EnergySpec' (R := ℝ) (NN := NN))
     (p : Params NN) (s : NN.State) (u : U)
-    (hcur : s.act u = TwoStateNeuralNetwork.σ_pos (NN := NN) ∨
-            s.act u = TwoStateNeuralNetwork.σ_neg (NN := NN)) :
+    (hcur : s.act u = TwoStateNeuralNetwork.ζ_pos (NN := NN) ∨
+            s.act u = TwoStateNeuralNetwork.ζ_neg (NN := NN)) :
     spec.E p (s.Up p u) ≤ spec.E p s := by
   set sPos := updPos (NN:=NN) s u
   set sNeg := updNeg (NN:=NN) s u
@@ -991,9 +990,9 @@ lemma energy_is_lyapunov_at_site
     simp [L, net, θ, spec.localField_spec]
   have hdiff :
       spec.E p sPos - spec.E p sNeg
-        = - (scale (R:=ℝ) (U:=U) (σ:=σ) (NN:=NN) (f:=fid)) * L := by
+        = - (scale (R:=ℝ) (U:=U) (ζ:=ζ) (NN:=NN) (f:=fid)) * L := by
     simpa [sPos, sNeg, hlocal] using hflip
-  set κ := scale (R:=ℝ) (U:=U) (σ:=σ) (NN:=NN) (f:=fid)
+  set κ := scale (R:=ℝ) (U:=U) (ζ:=ζ) (NN:=NN) (f:=fid)
   have hm := TwoStateNeuralNetwork.m_order (NN:=NN)
   have hκpos : 0 < κ := by
     simp [κ, scale]
@@ -1046,24 +1045,24 @@ lemma energy_is_lyapunov_at_site
 
 /-- Wrapper (argument order variant). -/
 lemma energy_is_lyapunov_at_site'
-    {U σ} [Fintype U] [DecidableEq U]
-    {NN : NeuralNetwork ℝ U σ} [TwoStateNeuralNetwork NN]
+    {U ζ} [Fintype U] [DecidableEq U]
+    {NN : NeuralNetwork ℝ U ζ} [TwoStateNeuralNetwork NN]
     (spec : EnergySpec' (R := ℝ) (NN := NN))
     (p : Params NN) (s : NN.State) (u : U)
-    (hcur : s.act u = TwoStateNeuralNetwork.σ_pos (NN := NN) ∨
-            s.act u = TwoStateNeuralNetwork.σ_neg (NN := NN)) :
+    (hcur : s.act u = TwoStateNeuralNetwork.ζ_pos (NN := NN) ∨
+            s.act u = TwoStateNeuralNetwork.ζ_neg (NN := NN)) :
     spec.E p (s.Up p u) ≤ spec.E p s :=
   energy_is_lyapunov_at_site (NN:=NN) (spec:=spec) p s u hcur
 
 /-- Lyapunov (energy non‑increase) at a single site (completed proof).
 Uses `energy_order_from_flip_id` and the flip relation with the identity hom. -/
 lemma energy_is_lyapunov_at_site''
-    {U σ} [Fintype U] [DecidableEq U]
-    (NN : NeuralNetwork ℝ U σ) [TwoStateNeuralNetwork NN]
+    {U ζ} [Fintype U] [DecidableEq U]
+    (NN : NeuralNetwork ℝ U ζ) [TwoStateNeuralNetwork NN]
     (spec : EnergySpec' (R := ℝ) (NN := NN))
     (p : Params NN) (s : NN.State) (u : U)
-    (hcur : s.act u = TwoStateNeuralNetwork.σ_pos (NN := NN) ∨
-            s.act u = TwoStateNeuralNetwork.σ_neg (NN := NN)) :
+    (hcur : s.act u = TwoStateNeuralNetwork.ζ_pos (NN := NN) ∨
+            s.act u = TwoStateNeuralNetwork.ζ_neg (NN := NN)) :
     spec.E p (NeuralNetwork.State.Up p s u) ≤ spec.E p s := by
   set sPos := updPos (NN:=NN) s u
   set sNeg := updNeg (NN:=NN) s u
@@ -1076,13 +1075,13 @@ lemma energy_is_lyapunov_at_site''
     simp [L, net, θ, spec.localField_spec]
   have hdiff :
       spec.E p sPos - spec.E p sNeg =
-        - (scale (R:=ℝ) (U:=U) (σ:=σ) (NN:=NN) (f:=fid)) * L := by
+        - (scale (R:=ℝ) (U:=U) (ζ:=ζ) (NN:=NN) (f:=fid)) * L := by
     simpa [sPos, sNeg, hlocal] using hflip
-  set κ := scale (R:=ℝ) (U:=U) (σ:=σ) (NN:=NN) (f:=fid)
+  set κ := scale (R:=ℝ) (U:=U) (ζ:=ζ) (NN:=NN) (f:=fid)
   have hκpos : 0 < κ := by
     have hmo := TwoStateNeuralNetwork.m_order (NN:=NN)
-    have : 0 < (NN.m (TwoStateNeuralNetwork.σ_pos (NN:=NN))
-              - NN.m (TwoStateNeuralNetwork.σ_neg (NN:=NN))) := sub_pos.mpr hmo
+    have : 0 < (NN.m (TwoStateNeuralNetwork.ζ_pos (NN:=NN))
+              - NN.m (TwoStateNeuralNetwork.ζ_neg (NN:=NN))) := sub_pos.mpr hmo
     simpa [κ, scale, fid, RingHom.id_apply]
   have hκ : 0 ≤ κ := hκpos.le
   have hOrder :=
@@ -1128,12 +1127,12 @@ lemma energy_is_lyapunov_at_site''
 
 /-- Restated helper with identical conclusion (wrapper). -/
 lemma energy_is_lyapunov_at_site'''
-    {U σ} [Fintype U] [DecidableEq U]
-    {NN : NeuralNetwork ℝ U σ} [TwoStateNeuralNetwork NN]
+    {U ζ} [Fintype U] [DecidableEq U]
+    {NN : NeuralNetwork ℝ U ζ} [TwoStateNeuralNetwork NN]
     (spec : EnergySpec' (R := ℝ) (NN := NN))
     (p : Params NN) (s : NN.State) (u : U)
-    (hcur : s.act u = TwoStateNeuralNetwork.σ_pos (NN := NN) ∨
-            s.act u = TwoStateNeuralNetwork.σ_neg (NN := NN)) :
+    (hcur : s.act u = TwoStateNeuralNetwork.ζ_pos (NN := NN) ∨
+            s.act u = TwoStateNeuralNetwork.ζ_neg (NN := NN)) :
     spec.E p (NeuralNetwork.State.Up p s u) ≤ spec.E p s :=
   energy_is_lyapunov_at_site (NN:=NN) (spec:=spec) p s u hcur
 

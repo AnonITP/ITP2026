@@ -7,9 +7,9 @@ set_option linter.style.longLine false
 
 open MeasureTheory
 
--- NOTE: `NeuralNetwork.State` in this project is defined with `U σ : Type` (universe 0),
--- so we keep `U` and `σ` in `Type` throughout this file to avoid universe mismatches.
-variable {U σ : Type}
+-- NOTE: `NeuralNetwork.State` in this project is defined with `U ζ : Type` (universe 0),
+-- so we keep `U` and `ζ` in `Type` throughout this file to avoid universe mismatches.
+variable {U ζ : Type}
 
 /-!
 # Hamiltonian neural networks and the canonical ensemble
@@ -20,10 +20,10 @@ and the physical, probabilistic framework of a `CanonicalEnsemble`.
 -/
 
 /-- For any finite-state neural network we use the trivial (⊤) measurable space. -/
-instance (NN : NeuralNetwork ℝ U σ) [Fintype NN.State] : MeasurableSpace NN.State := ⊤
+instance (NN : NeuralNetwork ℝ U ζ) [Fintype NN.State] : MeasurableSpace NN.State := ⊤
 
 @[simp] lemma measurable_of_fintype_state
-    (NN : NeuralNetwork ℝ U σ) [Fintype NN.State] (f : NN.State → ℝ) :
+    (NN : NeuralNetwork ℝ U ζ) [Fintype NN.State] (f : NN.State → ℝ) :
     Measurable f := by
   unfold Measurable; intro s _; simp
 
@@ -34,7 +34,7 @@ Hamiltonian, and that its deterministic dynamics are a form of energy minimizati
 
 - `NN`: The concrete `NeuralNetwork` structure.
 -/
-class IsHamiltonian (NN : NeuralNetwork ℝ U σ) [MeasurableSpace NN.State] [DecidableEq U] where
+class IsHamiltonian (NN : NeuralNetwork ℝ U ζ) [MeasurableSpace NN.State] [DecidableEq U] where
   /-- The energy function (Hamiltonian) of a given state of the network. -/
   energy : Params NN → NN.State → ℝ
   /-- A proof that the energy function is measurable (trivial for discrete (⊤) state spaces). -/
@@ -54,7 +54,7 @@ mechanics (free energy, entropy, etc.) to a structurally-defined neural network.
 -/
 @[simps!]
 noncomputable def toCanonicalEnsemble [DecidableEq U]
-    (NN : NeuralNetwork ℝ U σ) [Fintype NN.State] [IsHamiltonian NN]
+    (NN : NeuralNetwork ℝ U ζ) [Fintype NN.State] [IsHamiltonian NN]
     (p : Params NN) :
     CanonicalEnsemble NN.State where
   energy := IsHamiltonian.energy p
@@ -75,20 +75,20 @@ If we define an `EnergySpec` for a network, Lean's typeclass system will now kno
 
 We generalize the previous `IsHamiltonian_of_EnergySpecSymmetricBinary` to any
 two–state neural network for which the activation predicate `pact` is *exactly*
-the two distinguished states `σ_pos` and `σ_neg`.  This is captured by the
+the two distinguished states `ζ_pos` and `ζ_neg`.  This is captured by the
 `TwoStateExclusive` predicate below.  For such networks, an `EnergySpec'`
 immediately yields an `IsHamiltonian` instance, reusing the generic
 `energy_is_lyapunov_at_site''` lemma (no binary–specialized reproofs). -/
 
 namespace TwoState
 
-/-- Exclusivity predicate: the allowed activations are precisely `σ_pos` or `σ_neg`. -/
+/-- Exclusivity predicate: the allowed activations are precisely `ζ_pos` or `ζ_neg`. -/
 class TwoStateExclusive
-    {U σ} (NN : NeuralNetwork ℝ U σ)
+    {U ζ} (NN : NeuralNetwork ℝ U ζ)
     [TwoStateNeuralNetwork NN] : Prop where
   (pact_iff : ∀ a, NN.pact a ↔
-      a = TwoStateNeuralNetwork.σ_pos (NN := NN) ∨
-      a = TwoStateNeuralNetwork.σ_neg (NN := NN))
+      a = TwoStateNeuralNetwork.ζ_pos (NN := NN) ∨
+      a = TwoStateNeuralNetwork.ζ_neg (NN := NN))
 
 attribute [simp] TwoStateExclusive.pact_iff
 
@@ -101,14 +101,14 @@ The file `NeuralNetwork/NeuralNetwork/TwoState.lean` also defines an `R`-generic
 -/
 
 instance
-    {U σ} (NN : NeuralNetwork ℝ U σ) [TwoStateNeuralNetwork NN] [TwoStateExclusive NN] :
+    {U ζ} (NN : NeuralNetwork ℝ U ζ) [TwoStateNeuralNetwork NN] [TwoStateExclusive NN] :
     TwoStateExclusiveR (NN := NN) where
   pact_iff := by
     intro a
     simp
 
 instance
-    {U σ} (NN : NeuralNetwork ℝ U σ) [TwoStateNeuralNetwork NN] [TwoStateExclusiveR (NN := NN)] :
+    {U ζ} (NN : NeuralNetwork ℝ U ζ) [TwoStateNeuralNetwork NN] [TwoStateExclusiveR (NN := NN)] :
     TwoStateExclusive NN where
   pact_iff := by
     intro a
@@ -162,15 +162,15 @@ end TwoState
 
 open TwoState
 
-variable {U σ : Type} [Fintype U] [DecidableEq U]
-variable {NN : NeuralNetwork ℝ U σ} [TwoStateNeuralNetwork NN]
+variable {U ζ : Type} [Fintype U] [DecidableEq U]
+variable {NN : NeuralNetwork ℝ U ζ} [TwoStateNeuralNetwork NN]
 
 /-- Generic bridge: any exclusive two–state NN with an `EnergySpec'` is Hamiltonian. -/
 instance IsHamiltonian_of_EnergySpec'
     (spec : TwoState.EnergySpec' (NN := NN))
     [Fintype NN.State]
     [TwoStateExclusive (NN := NN)] :
-    IsHamiltonian (U := U) (σ := σ) NN where
+    IsHamiltonian (U := U) (ζ := ζ) NN where
   energy := spec.E
   energy_measurable := by
     intro p
@@ -204,41 +204,41 @@ variable {U : Type} [DecidableEq U]
 
 /-- Abbreviation: the canonical ensemble associated to a Hamiltonian neural network. -/
 noncomputable abbrev hopfieldCE
-    (NN : NeuralNetwork ℝ U σ) [Fintype NN.State] [IsHamiltonian (U := U) (σ := σ) NN]
+    (NN : NeuralNetwork ℝ U ζ) [Fintype NN.State] [IsHamiltonian (U := U) (ζ := ζ) NN]
     (p : Params NN) :
     CanonicalEnsemble NN.State :=
-  toCanonicalEnsemble (U := U) (σ := σ) NN p
+  toCanonicalEnsemble (U := U) (ζ := ζ) NN p
 
 /-- The induced finite–ensemble structure (counting measure, dof = 0, unit = 1). -/
 instance
-    (NN : NeuralNetwork ℝ U σ) [Fintype NN.State] [IsHamiltonian (U := U) (σ := σ) NN]
+    (NN : NeuralNetwork ℝ U ζ) [Fintype NN.State] [IsHamiltonian (U := U) (ζ := ζ) NN]
     (p : Params NN) :
-    CanonicalEnsemble.IsFinite (hopfieldCE (U := U) (σ := σ) NN p) where
+    CanonicalEnsemble.IsFinite (hopfieldCE (U := U) (ζ := ζ) NN p) where
   μ_eq_count := rfl
   dof_eq_zero := rfl
   phase_space_unit_eq_one := rfl
 
 @[simp]
 lemma hopfieldCE_dof
-    (NN : NeuralNetwork ℝ U σ) [Fintype NN.State] [IsHamiltonian (U := U) (σ := σ) NN]
+    (NN : NeuralNetwork ℝ U ζ) [Fintype NN.State] [IsHamiltonian (U := U) (ζ := ζ) NN]
     (p : Params NN) :
-    (hopfieldCE (U := U) (σ := σ) NN p).dof = 0 := rfl
+    (hopfieldCE (U := U) (ζ := ζ) NN p).dof = 0 := rfl
 
 @[simp]
 lemma hopfieldCE_phaseSpaceunit
-    (NN : NeuralNetwork ℝ U σ) [Fintype NN.State] [IsHamiltonian (U := U) (σ := σ) NN]
+    (NN : NeuralNetwork ℝ U ζ) [Fintype NN.State] [IsHamiltonian (U := U) (ζ := ζ) NN]
     (p : Params NN) :
-    (hopfieldCE (U := U) (σ := σ) NN p).phaseSpaceunit = 1 := rfl
+    (hopfieldCE (U := U) (ζ := ζ) NN p).phaseSpaceunit = 1 := rfl
 
 /-- Uniform probability for a constant-energy Hamiltonian (sanity test of the bridge). -/
 lemma hopfieldCE_probability_const_energy
-    (NN : NeuralNetwork ℝ U σ) [Fintype NN.State] [IsHamiltonian (U := U) (σ := σ) NN]
+    (NN : NeuralNetwork ℝ U ζ) [Fintype NN.State] [IsHamiltonian (U := U) (ζ := ζ) NN]
     (p : Params NN) (c : ℝ)
-    (hE : ∀ s, IsHamiltonian.energy (U := U) (σ := σ) (NN := NN) p s = c)
+    (hE : ∀ s, IsHamiltonian.energy (U := U) (ζ := ζ) (NN := NN) p s = c)
     (T : Temperature) (s : NN.State) :
-    (hopfieldCE (U := U) (σ := σ) NN p).probability T s
+    (hopfieldCE (U := U) (ζ := ζ) NN p).probability T s
       = (1 : ℝ) / (Fintype.card NN.State) := by
-  set 𝓒 := hopfieldCE (U := U) (σ := σ) NN p
+  set 𝓒 := hopfieldCE (U := U) (ζ := ζ) NN p
   have hZ :=
     (mathematicalPartitionFunction_of_fintype (𝓒:=𝓒) T)
   have hZconst :
@@ -268,13 +268,13 @@ lemma hopfieldCE_probability_const_energy
 /-- Corollary: mean energy = constant `c` under the induced canonical ensemble,
     for a constant-energy network. -/
 lemma hopfieldCE_meanEnergy_const
-    (NN : NeuralNetwork ℝ U σ) [Fintype NN.State] [Nonempty NN.State]
-    [IsHamiltonian (U := U) (σ := σ) NN]
+    (NN : NeuralNetwork ℝ U ζ) [Fintype NN.State] [Nonempty NN.State]
+    [IsHamiltonian (U := U) (ζ := ζ) NN]
     (p : Params NN) (c : ℝ)
-    (hE : ∀ s, IsHamiltonian.energy (U := U) (σ := σ) (NN := NN) p s = c)
+    (hE : ∀ s, IsHamiltonian.energy (U := U) (ζ := ζ) (NN := NN) p s = c)
     (T : Temperature) :
-    (hopfieldCE (U := U) (σ := σ) NN p).meanEnergy T = c := by
-  set 𝓒 := hopfieldCE (U := U) (σ := σ) NN p
+    (hopfieldCE (U := U) (ζ := ζ) NN p).meanEnergy T = c := by
+  set 𝓒 := hopfieldCE (U := U) (ζ := ζ) NN p
   have hZeq :
       𝓒.mathematicalPartitionFunction T
         = (Fintype.card NN.State : ℝ) * Real.exp (-(T.β : ℝ) * c) := by
@@ -291,15 +291,15 @@ lemma hopfieldCE_meanEnergy_const
     simpa [hZform]
   have hNum' :
       (∑ s : NN.State,
-          IsHamiltonian.energy (U := U) (σ := σ) (NN := NN) p s *
+          IsHamiltonian.energy (U := U) (ζ := ζ) (NN := NN) p s *
             Real.exp (-(T.β : ℝ) *
-              IsHamiltonian.energy (U := U) (σ := σ) (NN := NN) p s))
+              IsHamiltonian.energy (U := U) (ζ := ζ) (NN := NN) p s))
         = c * 𝓒.mathematicalPartitionFunction T := by
     have hNumEq :
         (∑ s : NN.State,
-            IsHamiltonian.energy (U := U) (σ := σ) (NN := NN) p s *
+            IsHamiltonian.energy (U := U) (ζ := ζ) (NN := NN) p s *
               Real.exp (-(T.β : ℝ) *
-                IsHamiltonian.energy (U := U) (σ := σ) (NN := NN) p s))
+                IsHamiltonian.energy (U := U) (ζ := ζ) (NN := NN) p s))
           = c * ((Fintype.card NN.State : ℝ) *
                 Real.exp (-(T.β : ℝ) * c)) := by
       have hconst :
@@ -324,58 +324,58 @@ lemma hopfieldCE_meanEnergy_const
 
 -- Inheritance showcase: canonical–ensemble facts usable for Hopfield networks.
 section CanonicalEnsembleInheritanceExamples
-variable {U σ : Type} [Fintype U] [DecidableEq U]
-variable (NN : NeuralNetwork ℝ U σ) [Fintype NN.State] [Nonempty NN.State]
-variable [IsHamiltonian (U := U) (σ := σ) NN]
+variable {U ζ : Type} [Fintype U] [DecidableEq U]
+variable (NN : NeuralNetwork ℝ U ζ) [Fintype NN.State] [Nonempty NN.State]
+variable [IsHamiltonian (U := U) (ζ := ζ) NN]
 variable (p : Params NN) (T : Temperature)
 variable (s : NN.State)
 
 -- Basic objects
-#check (hopfieldCE (U := U) (σ := σ) NN p).partitionFunction
-#check (hopfieldCE (U := U) (σ := σ) NN p).mathematicalPartitionFunction
+#check (hopfieldCE (U := U) (ζ := ζ) NN p).partitionFunction
+#check (hopfieldCE (U := U) (ζ := ζ) NN p).mathematicalPartitionFunction
 
 -- Positivity (finite specialization)
 #check (mathematicalPartitionFunction_pos_finite
-          (𝓒:=hopfieldCE (U := U) (σ := σ) NN p) (T:=T))
+          (𝓒:=hopfieldCE (U := U) (ζ := ζ) NN p) (T:=T))
 #check (partitionFunction_pos_finite
-          (𝓒:=hopfieldCE (U := U) (σ := σ) NN p) (T:=T))
+          (𝓒:=hopfieldCE (U := U) (ζ := ζ) NN p) (T:=T))
 
 -- Probability normalization & basic bounds
 #check (sum_probability_eq_one
-          (𝓒:=hopfieldCE (U := U) (σ := σ) NN p) (T:=T))
+          (𝓒:=hopfieldCE (U := U) (ζ := ζ) NN p) (T:=T))
 #check (probability_nonneg_finite
-          (𝓒:=hopfieldCE (U := U) (σ := σ) NN p) (T:=T) (i:=s))
+          (𝓒:=hopfieldCE (U := U) (ζ := ζ) NN p) (T:=T) (i:=s))
 
 -- Entropy identifications in finite case
 #check (shannonEntropy_eq_differentialEntropy
-          (𝓒:=hopfieldCE (U := U) (σ := σ) NN p) (T:=T))
+          (𝓒:=hopfieldCE (U := U) (ζ := ζ) NN p) (T:=T))
 #check (thermodynamicEntropy_eq_shannonEntropy
-          (𝓒:=hopfieldCE (U := U) (σ := σ) NN p) (T:=T))
+          (𝓒:=hopfieldCE (U := U) (ζ := ζ) NN p) (T:=T))
 
 -- Additivity for two independent Hopfield ensembles (same phaseSpaceunit = 1)
-variable (NN₁ NN₂ : NeuralNetwork ℝ U σ)
-variable [Fintype NN₁.State] [Nonempty NN₁.State] [IsHamiltonian (U := U) (σ := σ) NN₁]
-variable [Fintype NN₂.State] [Nonempty NN₂.State] [IsHamiltonian (U := U) (σ := σ) NN₂]
+variable (NN₁ NN₂ : NeuralNetwork ℝ U ζ)
+variable [Fintype NN₁.State] [Nonempty NN₁.State] [IsHamiltonian (U := U) (ζ := ζ) NN₁]
+variable [Fintype NN₂.State] [Nonempty NN₂.State] [IsHamiltonian (U := U) (ζ := ζ) NN₂]
 variable (p₁ : Params NN₁) (p₂ : Params NN₂)
 
 #check partitionFunction_add
-  (𝓒:=hopfieldCE (U := U) (σ := σ) NN₁ p₁)
-  (𝓒1:=hopfieldCE (U := U) (σ := σ) NN₂ p₂)
+  (𝓒:=hopfieldCE (U := U) (ζ := ζ) NN₁ p₁)
+  (𝓒1:=hopfieldCE (U := U) (ζ := ζ) NN₂ p₂)
   (T:=T) (by simp)
 #check helmholtzFreeEnergy_add
-  (𝓒:=hopfieldCE (U := U) (σ := σ) NN₁ p₁)
-  (𝓒1:=hopfieldCE (U := U) (σ := σ) NN₂ p₂)
+  (𝓒:=hopfieldCE (U := U) (ζ := ζ) NN₁ p₁)
+  (𝓒1:=hopfieldCE (U := U) (ζ := ζ) NN₂ p₂)
   (T:=T) (by simp)
 #check meanEnergy_add
-  (𝓒:=hopfieldCE (U := U) (σ := σ) NN₁ p₁)
-  (𝓒1:=hopfieldCE (U := U) (σ := σ) NN₂ p₂)
+  (𝓒:=hopfieldCE (U := U) (ζ := ζ) NN₁ p₁)
+  (𝓒1:=hopfieldCE (U := U) (ζ := ζ) NN₂ p₂)
 
 -- n independent copies (scaling laws)
 #check partitionFunction_nsmul
-  (𝓒:=hopfieldCE (U := U) (σ := σ) NN p) (n:=3) (T:=T)
+  (𝓒:=hopfieldCE (U := U) (ζ := ζ) NN p) (n:=3) (T:=T)
 #check helmholtzFreeEnergy_nsmul
-  (𝓒:=hopfieldCE (U := U) (σ := σ) NN p) (n:=3) (T:=T)
+  (𝓒:=hopfieldCE (U := U) (ζ := ζ) NN p) (n:=3) (T:=T)
 #check meanEnergy_nsmul
-  (𝓒:=hopfieldCE (U := U) (σ := σ) NN p) (n:=3) (T:=T)
+  (𝓒:=hopfieldCE (U := U) (ζ := ζ) NN p) (n:=3) (T:=T)
 
 end CanonicalEnsembleInheritanceExamples

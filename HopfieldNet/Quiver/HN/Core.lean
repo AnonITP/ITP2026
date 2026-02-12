@@ -343,7 +343,7 @@ theorem Eθ_diff : (s.Up wθ u).Eθ wθ - s.Eθ wθ = θ' (wθ.θ u) * ((s.Up w�
     rw [sub_eq_add_neg, mul_add, mul_neg]; simp only [add_neg_cancel_left]
 
 @[simp]
-lemma E_final_Form : (s.Up wθ u).E wθ - s.E wθ = (s.act u - (s.Up wθ u).act u) *
+lemma energy_diff_formula : (s.Up wθ u).E wθ - s.E wθ = (s.act u - (s.Up wθ u).act u) *
     ((∑ v2 ∈ {v2 | v2 ≠ u}, wθ.w u v2 * s.act v2) - θ' (wθ.θ u)) := by
   calc _ = (s.Up wθ u).Eθ wθ- s.Eθ wθ +  (s.Up wθ u).Ew wθ - s.Ew wθ := ?_
        _ = ∑ v2 ∈ {v2 | v2 ≠ u}, (- wθ.w v2 u * (s.Up wθ u).act v2 * (s.Up wθ u).act u +
@@ -386,7 +386,7 @@ lemma E_final_Form : (s.Up wθ u).E wθ - s.E wθ = (s.act u - (s.Up wθ u).act 
 
 @[simp]
 lemma energy_diff_leq_zero (hc : (s.Up wθ u).act u ≠ s.act u) : (s.Up wθ u).E wθ ≤ s.E wθ := by
-  apply le_of_sub_nonpos; rw [E_final_Form]
+  apply le_of_sub_nonpos; rw [energy_diff_formula]
   by_cases hs : s.net wθ u < θ' (wθ.θ u)
   · apply mul_nonpos_of_nonneg_of_nonpos ?_ ?_
     · apply le_of_lt; apply sub_pos_of_lt;
@@ -408,7 +408,7 @@ def NeuralNetwork.State.pluses := ∑ u, if s.act u = 1 then 1 else 0
 theorem energy_lt_zero_or_pluses_increase (hc : (s.Up wθ u).act u ≠ s.act u) :
     (s.Up wθ u).E wθ < s.E wθ ∨ ((s.Up wθ u).E wθ = s.E wθ ∧ s.pluses < (s.Up wθ u).pluses) :=
 (lt_or_eq_of_le (energy_diff_leq_zero wθ hc)).elim Or.inl (fun hr => Or.inr (by
-  constructor; assumption; rw [← sub_eq_zero, E_final_Form, mul_eq_zero] at hr
+  constructor; assumption; rw [← sub_eq_zero, energy_diff_formula, mul_eq_zero] at hr
   cases hr --with h1 h2
   · rename_i h1
     rw [sub_eq_zero] at h1; apply sum_lt_sum;

@@ -48,12 +48,12 @@ open Finset Matrix NeuralNetwork State Constants Temperature Filter Topology
 open scoped ENNReal NNReal BigOperators
 open NeuralNetwork
 
---variable {R U σ : Type}
---variable {R U σ : Type*}
-universe uR uU uσ
+--variable {R U ζ : Type}
+--variable {R U ζ : Type*}
+universe uR uU uζ
 
 -- We can also parametrize earlier variables with these universes if desired:
-variable {R : Type uR} {U : Type uU} {σ : Type uσ}
+variable {R : Type uR} {U : Type uU} {ζ : Type uζ}
 
 /-! ### Convergence
 As β → ∞ (i.e., T → 0+), the one–site Gibbs update PMF converges pointwise to the
@@ -67,10 +67,10 @@ namespace TwoState
   Reintroduce all required instances (they were shadowed when reopening the namespace),
   so that `U` and `NN` are fixed consistently for `updPos`, `updNeg`, `θ0`, etc.
 -/
-variable {R U σ : Type}
+variable {R U ζ : Type}
 variable [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 variable [DecidableEq U] [Fintype U] [Nonempty U]
-variable {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+variable {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
 
 /-- Rewrite the 1/0/1/2 piecewise expression by dropping the positive `1/kB` factor
 in front of its argument. This aligns the “zero-temperature target” with the
@@ -78,9 +78,9 @@ real-limit expression using `c0 := κ * f L`. -/
 lemma sign_piecewise_rewrite_with_c0
     {F} [FunLike F R ℝ]
     (f : F)
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
     (L : R) :
-    let κ := scale (R:=R) (U:=U) (σ:=σ) (NN := NN) (f:=f)
+    let κ := scale (R:=R) (U:=U) (ζ:=ζ) (NN := NN) (f:=f)
     (if 0 < ((κ / kB) * (f L)) then 1
      else if ((κ / kB) * (f L)) < 0 then 0 else (1/2 : ℝ))
     =
@@ -100,13 +100,13 @@ lemma sign_piecewise_rewrite_with_c0
 lemma scale_pos
     {F} [FunLike F R ℝ] [OrderHomClass F R ℝ]
     (f : F) (hf : Function.Injective f)
-    {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN] :
-    0 < scale (R:=R) (U:=U) (σ:=σ) (NN := NN) (f:=f) := by
-  -- TwoStateNeuralNetwork.m_order : m σ_neg < m σ_pos
+    {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN] :
+    0 < scale (R:=R) (U:=U) (ζ:=ζ) (NN := NN) (f:=f) := by
+  -- TwoStateNeuralNetwork.m_order : m ζ_neg < m ζ_pos
   have h := (strictMono_of_injective_orderHom (R:=R) (f:=f) hf)
   have himg :
-      f (NN.m (TwoStateNeuralNetwork.σ_neg (NN := NN))) <
-        f (NN.m (TwoStateNeuralNetwork.σ_pos (NN := NN))) :=
+      f (NN.m (TwoStateNeuralNetwork.ζ_neg (NN := NN))) <
+        f (NN.m (TwoStateNeuralNetwork.ζ_pos (NN := NN))) :=
     h (TwoStateNeuralNetwork.m_order (NN := NN))
   exact sub_pos.mpr himg
 
@@ -404,7 +404,7 @@ lemma zeroTempLimitPMF_updPos_eval_tie
 
 variable {F} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 variable [DecidableEq U] [Fintype U] [Nonempty U]
-variable {NN : NeuralNetwork R U σ} [TwoStateNeuralNetwork NN]
+variable {NN : NeuralNetwork R U ζ} [TwoStateNeuralNetwork NN]
 variable [FunLike F R ℝ] [RingHomClass F R ℝ] [OrderHomClass F R ℝ]
 
 /-- Core algebra: under θ < net, the scaled difference is positive. -/
@@ -413,7 +413,7 @@ lemma pos_of_theta_lt_net
     (net θ : R) (h : θ < net) :
     0 < ((scale (NN := NN) (f:=f)) / kB) * (f net - f θ) := by
   have hκ : 0 < scale (NN := NN) (f:=f) :=
-    scale_pos (R:=R) (U:=U) (σ:=σ) (NN := NN) (f:=f) hf
+    scale_pos (R:=R) (U:=U) (ζ:=ζ) (NN := NN) (f:=f) hf
   have hκdiv : 0 < scale (NN := NN) (f:=f) / kB := div_pos hκ kB_pos
   have hsub : 0 < net - θ := sub_pos.mpr h
   have hfsub : 0 < f (net - θ) := map_pos_of_pos (R:=R) (f:=f) hf hsub
@@ -425,7 +425,7 @@ lemma neg_of_net_lt_theta
     (net θ : R) (h : net < θ) :
     ((scale (NN := NN) (f:=f)) / kB) * (f net - f θ) < 0 := by
   have hκ : 0 < scale (NN := NN) (f:=f) :=
-    scale_pos (R:=R) (U:=U) (σ:=σ) (NN := NN) (f:=f) hf
+    scale_pos (R:=R) (U:=U) (ζ:=ζ) (NN := NN) (f:=f) hf
   have hκdiv : 0 < scale (NN := NN) (f:=f) / kB := div_pos hκ kB_pos
   have hsub : net - θ < 0 := sub_lt_zero.mpr h
   have hfsub : f (net - θ) < 0 := map_neg_of_neg (R:=R) (f:=f) hf hsub
@@ -484,7 +484,7 @@ lemma zeroTemp_target_updNeg_as_ofReal_one_sub_sign_pos
   have hfpos : 0 < f ((s.net p u) - (p.θ u).get _) :=
     map_pos_of_pos (R:=R) (f:=f) hf hLpos
   have hκpos : 0 < (scale (NN := NN) (f:=f)) / kB :=
-    div_pos (scale_pos (R:=R) (U:=U) (σ:=σ) (NN := NN) (f:=f) hf) kB_pos
+    div_pos (scale_pos (R:=R) (U:=U) (ζ:=ζ) (NN := NN) (f:=f) hf) kB_pos
   have hprod : 0 <
       ((scale (NN := NN) (f:=f)) / kB) * f ((s.net p u) - (p.θ u).get _) :=
     mul_pos hκpos hfpos
@@ -582,7 +582,7 @@ lemma zeroTemp_target_updNeg_as_ofReal_one_sub_sign_neg
   let L  : R := s.net p u - (p.θ u).get θ0
   have hL_neg : L < 0 := sub_lt_zero.mpr hneg
   have hfL_neg : f L < 0 := map_neg_of_neg (R:=R) (f:=f) hf hL_neg
-  have hκ_pos : 0 < κ := scale_pos (R:=R) (U:=U) (σ:=σ) (NN := NN) (f:=f) hf
+  have hκ_pos : 0 < κ := scale_pos (R:=R) (U:=U) (ζ:=ζ) (NN := NN) (f:=f) hf
   have hκdiv_pos : 0 < κ / kB := div_pos hκ_pos kB_pos
   have hprod_neg : (κ / kB) * f L < 0 := mul_neg_of_pos_of_neg hκdiv_pos hfL_neg
   have hPiece :
@@ -701,7 +701,7 @@ lemma gibbs_update_tends_to_zero_temp_limit_apply_updPos
   set L : R := net - θ
   set c0 : ℝ := (scale (NN := NN) (f:=f)) * (f L)
   have h_real := tendsto_probPos_along_ofβ_to_piecewise (NN := NN) f p s u
-  have h_rewrite := sign_piecewise_rewrite_with_c0 (R:=R) (U:=U) (σ:=σ) (NN := NN) (f:=f) L
+  have h_rewrite := sign_piecewise_rewrite_with_c0 (R:=R) (U:=U) (ζ:=ζ) (NN := NN) (f:=f) L
   have hlim := ENNReal.tendsto_ofReal (by simpa [L, c0, h_rewrite] using h_real)
   have h := (tendsto_congr' hev).mpr hlim
   have h' : Tendsto (fun b : ℝ≥0 =>
@@ -747,7 +747,7 @@ lemma gibbs_update_tends_to_zero_temp_limit_apply_updNeg
       (if 0 < c0 then 1 else if c0 < 0 then 0 else (1/2 : ℝ)) := by
     simpa [c0, one_div] using
       sign_piecewise_rewrite_with_c0
-        (R:=R) (U:=U) (σ:=σ) (NN := NN) (f:=f) L
+        (R:=R) (U:=U) (ζ:=ζ) (NN := NN) (f:=f) L
   have h_conv :
       Tendsto (fun b : ℝ≥0 =>
         (gibbsUpdate (NN := NN) f p (Temperature.ofβ b) s u) (updNeg (s:=s) (u:=u)))
